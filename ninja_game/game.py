@@ -56,11 +56,11 @@ class Game:
             'ambience': pygame.mixer.Sound('data/sfx/ambience.wav'),
         }
         
-        self.sfx['ambience'].set_volume(0.2)
-        self.sfx['shoot'].set_volume(0.4)
-        self.sfx['hit'].set_volume(0.8)
-        self.sfx['dash'].set_volume(0.3)
-        self.sfx['jump'].set_volume(0.7)
+        self.sfx['ambience'].set_volume(0.01)
+        self.sfx['shoot'].set_volume(0.01)
+        self.sfx['hit'].set_volume(0.01)
+        self.sfx['dash'].set_volume(0.01)
+        self.sfx['jump'].set_volume(0.01)
         
         self.clouds = Clouds(self.assets['clouds'], count=16)
         
@@ -73,7 +73,7 @@ class Game:
         
         self.screenshake = 0
 
-        self.net = ClientNetwork("127.0.0.1", 5005)
+        self.net = ClientNetwork("82.65.71.205", 5005)
         self.net.connect()
         self.remote_players = {}
         
@@ -103,7 +103,7 @@ class Game:
         
     def run(self):
         pygame.mixer.music.load('data/music.wav')
-        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.set_volume(0.001)
         pygame.mixer.music.play(-1)
         
         self.sfx['ambience'].play(-1)
