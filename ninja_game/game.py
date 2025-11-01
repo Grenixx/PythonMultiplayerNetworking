@@ -73,9 +73,10 @@ class Game:
         
         self.screenshake = 0
 
-        self.net = ClientNetwork("82.65.71.205", 5005)
+        self.net = ClientNetwork("127.0.0.1", 5005)
         self.net.connect()
         self.remote_players = {}
+        
         
     def load_level(self, map_id):
         self.tilemap.load('data/maps/' + str(map_id) + '.json')
@@ -84,13 +85,11 @@ class Game:
         for tree in self.tilemap.extract([('large_decor', 2)], keep=True):
             self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))
             
-        self.enemies = []
+        # Plus besoin de charger les ennemis localement - ils sont gérés par le serveur
         for spawner in self.tilemap.extract([('spawners', 0), ('spawners', 1)]):
             if spawner['variant'] == 0:
                 self.player.pos = spawner['pos']
                 self.player.air_time = 0
-            else:
-                self.enemies.append(Enemy(self, spawner['pos'], (8, 15)))
             
         self.projectiles = []
         self.particles = []
@@ -120,11 +119,8 @@ class Game:
             
             self.screenshake = max(0, self.screenshake - 1)
             
-            if not len(self.enemies):
-                self.transition += 1
-                if self.transition > 30:
-                    self.level = min(self.level + 1, len(os.listdir('data/maps')) - 1)
-                    self.load_level(self.level)
+            # Les ennemis sont maintenant gérés par le serveur
+            # Plus de vérification de transition basée sur les ennemis
             if self.transition < 0:
                 self.transition += 1
             
@@ -149,11 +145,13 @@ class Game:
             
             self.tilemap.render(self.display, offset=render_scroll)
             
-            for enemy in self.enemies.copy():
-                kill = enemy.update(self.tilemap, (0, 0))
-                enemy.render(self.display, offset=render_scroll)
-                if kill:
-                    self.enemies.remove(enemy)
+            # --- Afficher les ennemis depuis le serveur (cercles violets) ---
+            for eid, (x, y) in self.net.enemies.items():
+                # Calculer la position à l'écran
+                screen_x = x - render_scroll[0]
+                screen_y = y - render_scroll[1]
+                # Dessiner un cercle violet (rayon 8)
+                pygame.draw.circle(self.display, (128, 0, 128), (int(screen_x), int(screen_y)), 8)
             
             if not self.dead:
                 self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
@@ -251,5 +249,5 @@ class Game:
 
             pygame.display.update()
             self.clock.tick(60)
-
+    
 Game().run()

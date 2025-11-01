@@ -10,6 +10,7 @@ class ClientNetwork:
         self.sock.settimeout(0.05)  # 50 ms timeout, évite le blocage complet
         self.id = None
         self.players = {}
+        self.enemies = {}  # enemy_id -> (x, y) - positions des ennemis depuis le serveur
         self.running = True
 
         # thread de réception
@@ -20,9 +21,10 @@ class ClientNetwork:
         self.sock.sendto(b'\x00' * 24, self.server)
         while self.id is None:
             try:
-                data, _ = self.sock.recvfrom(4)
-                self.id = struct.unpack("I", data)[0]
-                print(f"Connected with ID {self.id}")
+                data, _ = self.sock.recvfrom(4)  # 4 bytes pour ID uniquement
+                if len(data) >= 4:
+                    self.id = struct.unpack("I", data)[0]
+                    print(f"Connected with ID {self.id}")
             except socket.timeout:
                 pass  # on attend la réponse
 
@@ -32,13 +34,33 @@ class ClientNetwork:
                 data, _ = self.sock.recvfrom(4096)
                 if not data:
                     continue
+                
+                # Format: [nb_players: B] [players...] [nb_enemies: B] [enemies...]
                 count = struct.unpack("B", data[0:1])[0]
                 offset = 1
                 new_players = {}
                 for _ in range(count):
-                    pid, x, y, vx, vy = struct.unpack("Iffff", data[offset:offset + 20])
-                    new_players[pid] = (x, y, vx, vy)
-                    offset += 20
+                    if len(data) >= offset + 20:
+                        pid, x, y, vx, vy = struct.unpack("Iffff", data[offset:offset + 20])
+                        new_players[pid] = (x, y, vx, vy)
+                        offset += 20
+                    else:
+                        break
+                
+                # Lire les ennemis (format simplifié: juste x, y)
+                if len(data) >= offset + 1:
+                    enemy_count = struct.unpack("B", data[offset:offset+1])[0]
+                    offset += 1
+                    new_enemies = {}
+                    for _ in range(enemy_count):
+                        if len(data) >= offset + 12:  # I (4) + 2*float (8) = 12 bytes
+                            eid, x, y = struct.unpack("Iff", data[offset:offset+12])
+                            new_enemies[eid] = (x, y)
+                            offset += 12
+                        else:
+                            break
+                    self.enemies = new_enemies
+                
                 self.players = new_players
             except socket.timeout:
                 pass  # pas de données pour l'instant
@@ -48,7 +70,7 @@ class ClientNetwork:
                 print("Listen error:", e)
                 break
 
-            time.sleep(0.01)  # évite d’utiliser 100% CPU
+            time.sleep(0.01)  # évite d'utiliser 100% CPU
 
     def send_state(self, x, y, vx, vy):
         try:
@@ -56,6 +78,7 @@ class ClientNetwork:
             self.sock.sendto(packet, self.server)
         except Exception as e:
             print("Send error:", e)
+    
 
 
     def disconnect(self):
