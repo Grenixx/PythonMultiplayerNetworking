@@ -120,6 +120,10 @@ class Game:
             #self.display_2.blit(self.assets['background'], (0, 0))
             shader_surface = self.shader_bg.render()
             self.display_2.blit(shader_surface, (0, 0))
+            # scroll = position de la caméra dans ton jeu
+            shader_surface = self.shader_bg.render(camera=(self.scroll[0] * 0.2, self.scroll[1] * -0.2))
+            self.display_2.blit(shader_surface, (0, 0))
+
 
 
             self.screenshake = max(0, self.screenshake - 1)

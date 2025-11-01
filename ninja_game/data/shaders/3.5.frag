@@ -2,7 +2,6 @@ precision mediump float;
 
 uniform float u_time;
 uniform vec2 u_resolution;
-uniform vec2 u_camera;
 
 vec2 randomGradient(vec2 p) {
   p += 0.02;
@@ -22,8 +21,8 @@ vec2 quintic(vec2 p) {
 }
 
 void main() {
-  vec2 uv = (gl_FragCoord.xy + u_camera) / u_resolution.y;
-
+  vec2 uv = gl_FragCoord.xy / u_resolution ;
+  uv = gl_FragCoord.xy / u_resolution.y;
   
   vec3 color = vec3(0.0);
   uv *= 15.0;
@@ -61,7 +60,7 @@ void main() {
 
   // Define colors based on remappedPerlin ranges
   if (remappedPerlin < 0.) {
-    color = vec3(0.02);  // Dark Blue
+    color = vec3(0.0, 0.73, 1.0);  // Dark Blue
   } else if (remappedPerlin < 0.1) {
     color = vec3(0.0784, 0.0784, 0.0863);  // White
   } else if (remappedPerlin < 0.2) {
