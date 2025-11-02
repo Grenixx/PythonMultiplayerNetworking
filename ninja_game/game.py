@@ -307,10 +307,24 @@ class Game:
                         self.player.is_pressed = None
                 # Si un bouton de la souris est pressé
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1: # Clic gauche
-                        self.player.attack(self.player.is_pressed)
+                    if event.button == 1:  # Clic gauche
+                        # Vérifie les touches actuellement maintenues
+                        keys = pygame.key.get_pressed()
+                        if keys[pygame.K_UP] or keys[pygame.K_z]:
+                            direction = 'up'
+                        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+                            direction = 'down'
+                        elif keys[pygame.K_LEFT] or keys[pygame.K_q]:
+                            direction = 'left'
+                        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                            direction = 'right'
+                        else:
+                            direction = None  # aucune direction active
+
+                        self.player.attack(direction)
+
                         
-            # --- Rendu (fin) ---
+            # --- Rendu (fin) ---qqqd
             # Si une transition est en cours, dessine l'effet de cercle
             if self.transition:
                 transition_surf = pygame.Surface(self.display.get_size())
