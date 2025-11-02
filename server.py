@@ -1,80 +1,63 @@
 import socket
-from threading import Thread
-import pickle
-import random
-from player import Player
+import struct
+import time
 
-players = {}
+SERVER_IP = "0.0.0.0"
+SERVER_PORT = 5005
+UPDATE_RATE = 1 / 30
 
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((SERVER_IP, SERVER_PORT))
+print(f"Server running on {SERVER_IP}:{SERVER_PORT}")
 
-class Server:
+clients = {}   # addr -> id
+players = {}   # id -> (x, y, vx, vy)
+next_id = 1
+last_update = time.time()
 
-    def __init__(self):
-        self.server_ip = "127.0.0.1"
-        self.port = 8080
-        self.server_settings = (self.server_ip, self.port)
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.player_index = 0
+while True:
+    try:
+        data, addr = sock.recvfrom(1024)
+        if not data:
+            continue
 
-    def start(self):
-        try:
-            self.server_socket.bind(self.server_settings)
-        except Exception as e:
-            print("[ERROR] Error trying to bind server.", e)
+        msg_type = data[0]
 
-        self.server_socket.listen(10)
-        self.listen_connections()
-        print(f"[CONNECTION] Listening for connections on {self.port}")
+        # --- Nouveau joueur ---
+        if addr not in clients and msg_type == 0:
+            clients[addr] = next_id
+            players[next_id] = (0, 0, 0, 0)
+            print(f"New player {next_id} connected {addr}")
+            sock.sendto(struct.pack("I", next_id), addr)
+            next_id += 1
 
-    def listen_connections(self):
-        while True:
-            conn, addr = self.server_socket.accept()
-            print(f"[CONNECTION] Connection from {addr}")
-            ACCEPT_THREAD = Thread(target=self.thread_client, args=(conn, addr, self.player_index))
-            ACCEPT_THREAD.start()
-            self.player_index += 1
+        # --- Déconnexion ---
+        elif msg_type == 1:
+            if addr in clients:
+                pid = clients[addr]
+                print(f"Player {pid} disconnected {addr}")
+                del players[pid]
+                del clients[addr]
+            continue
 
-    def thread_client(self, conn, addr, player_index):
-        rand_x = random.randrange(1, 50)
-        rand_y = random.randrange(1, 50)
-        color = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
+        # --- Update position ---
+        if msg_type == 0 and addr in clients:
+            pid = clients[addr]
+            # data = [type(1 byte)] + 4 floats (16 bytes)
+            if len(data) >= 17:
+                x, y, vx, vy = struct.unpack("ffff", data[1:17])
+                players[pid] = (x, y, vx, vy)
 
-        player = Player(rand_x, rand_y, 50, 50, color)
-        players[player_index] = player
-        conn.send(pickle.dumps(players[player_index]))
-        print("[SERVER] Started thread with player index:", player_index)
-        current_player = players[player_index]
-        is_online = True
-        while is_online:
-            try:
-                data = pickle.loads(conn.recv(2048))
-                players[player_index] = data
-                list_players = {}
-                if not data:
-                    print(f"{addr} has disconnected")
-                    is_online = False
-                else:
-                    for player_idx in players:
-                        player = players[player_idx]
-                        if player != current_player:
-                            list_players[player_idx] = player
+        # --- Envoi des mises à jour ---
+        now = time.time()
+        if now - last_update >= UPDATE_RATE:
+            last_update = now
+            payload = struct.pack("B", len(players))
+            for pid, (px, py, pvx, pvy) in players.items():
+                payload += struct.pack("Iffff", pid, px, py, pvx, pvy)
+            for c in clients:
+                sock.sendto(payload, c)
 
-                conn.sendall(pickle.dumps(list_players))
-
-            except Exception as e:
-                print(f"[SERVER] {addr} has disconnected.", e)
-                is_online = False
-
-        print(f"[SERVER] Ended threaded tasks for client: {addr}")
-        self.player_index -= 1
-        del players[player_index]
-        conn.close()
-
-
-def main():
-    server = Server()
-    server.start()
-
-
-if __name__ == '__main__':
-    main()
+    except Exception as e:
+        # print("Error:", e)
+        pass

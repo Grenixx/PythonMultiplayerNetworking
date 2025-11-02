@@ -12,19 +12,20 @@ class ClientNetwork:
         self.players = {}
         self.running = True
 
-        # thread de réception
-        threading.Thread(target=self.listen, daemon=True).start()
-
     def connect(self):
         # on envoie un paquet vide pour que le serveur nous attribue un ID
         self.sock.sendto(b'\x00' * 24, self.server)
         while self.id is None:
             try:
+                # On attend ici la réponse du serveur avec notre ID
                 data, _ = self.sock.recvfrom(4)
                 self.id = struct.unpack("I", data)[0]
                 print(f"Connected with ID {self.id}")
             except socket.timeout:
-                pass  # on attend la réponse
+                print("Connection attempt timed out, retrying...")
+                self.sock.sendto(b'\x00' * 24, self.server) # On renvoie la demande
+        # On ne démarre le thread d'écoute qu'une fois l'ID reçu
+        threading.Thread(target=self.listen, daemon=True).start()
 
     def listen(self):
         while self.running:

@@ -1,18 +1,23 @@
 import os
-
 import pygame
 
-BASE_IMG_PATH = 'data/images/'
+# Dossier racine du projet (le dossier "ninja_game")
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_IMG_PATH = os.path.join(BASE_DIR, 'data', 'images')
 
 def load_image(path):
-    img = pygame.image.load(BASE_IMG_PATH + path).convert()
+    # 🔧 CORRECTION : toujours utiliser os.path.join, pas "+"
+    full_path = os.path.join(BASE_IMG_PATH, path)
+    img = pygame.image.load(full_path).convert()
     img.set_colorkey((0, 0, 0))
     return img
 
 def load_images(path):
     images = []
-    for img_name in sorted(os.listdir(BASE_IMG_PATH + path)):
-        images.append(load_image(path + '/' + img_name))
+    folder_path = os.path.join(BASE_IMG_PATH, path)
+    for img_name in sorted(os.listdir(folder_path)):
+        # 🔧 CORRECTION : ici aussi, join pour garder un chemin propre
+        images.append(load_image(os.path.join(path, img_name)))
     return images
 
 class Animation:
