@@ -164,6 +164,7 @@ class Game:
             
             # --- Afficher les ennemis depuis le serveur (cercles violets) ---
             # --- Rendu des ennemis ---
+            self.enemies_renderer.update()  # vérifie collisions / dash kill
             self.enemies_renderer.render(self.display, offset=render_scroll)
 
             

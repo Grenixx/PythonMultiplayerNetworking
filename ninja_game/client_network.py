@@ -93,6 +93,16 @@ class ClientNetwork:
             print("Send error:", e)
 
 
+    def remove_enemy(self, eid):
+        """
+        Envoie un message type 3 au serveur pour supprimer un monstre.
+        """
+        try:
+            packet = b'\x03' + struct.pack("I", eid)
+            self.sock.sendto(packet, self.server)
+            print(f"Demande suppression du monstre {eid}")
+        except Exception as e:
+            print("Remove enemy error:", e)
 
 
     def disconnect(self):

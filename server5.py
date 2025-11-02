@@ -160,9 +160,11 @@ class GameServer:
         if msg_type == 0 and addr in self.players.clients and len(data) >= 10:
             self.players.update_player(addr, data[1:])  # 10 octets attendus
 
-
-
-
+        if msg_type == 3 and len(data) >= 5:
+            eid = struct.unpack("I", data[1:5])[0]
+            if eid in self.enemies.enemies:
+                del self.enemies.enemies[eid]
+            return
 
     def update_world(self):
         self.enemies.update(self.players.players)

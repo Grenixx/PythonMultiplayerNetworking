@@ -180,18 +180,57 @@ class Player(PhysicsEntity):
                 self.dashing = 60
 
 
+import math
 class PurpleCircle:
-    """Classe simple pour gérer le rendu des ennemis ronds violets."""
+    """Classe gérant les ennemis ronds violets + collisions avec le joueur."""
     def __init__(self, game):
         self.game = game
+        self.radius = 8  # rayon du cercle pour les collisions
+
+    def update(self):
+        """
+        Vérifie les collisions entre le joueur et les ennemis.
+        Si le joueur est en dash et touche un ennemi, on le supprime.
+        """
+        player_rect = self.game.player.rect()
+        player_center = (player_rect.centerx, player_rect.centery)
+
+        # Si le joueur dash (valeur absolue > 50 d’après ton code)
+        is_dashing = abs(self.game.player.dashing) > 50
+
+        if not is_dashing:
+            return  # inutile de vérifier si pas en dash
+
+        to_remove = []
+
+        for eid, (x, y) in list(self.game.net.enemies.items()):
+            # calcul distance entre joueur et ennemi
+            dx = x - player_center[0]
+            dy = y - player_center[1]
+            dist = math.sqrt(dx*dx + dy*dy)
+
+            if dist < self.radius + 10:  # 10 = demi-largeur du joueur approximatif
+                to_remove.append(eid)
+
+        for eid in to_remove:
+            # Supprime localement pour effet instantané
+            if eid in self.game.net.enemies:
+                del self.game.net.enemies[eid]
+            # Envoie la suppression au serveur
+            self.game.net.remove_enemy(eid)
+            # Optionnel : petit effet visuel
+            self.game.particles.append(
+                Particle(self.game, 'particle', player_center, velocity=[0, 0], frame=0)
+            )
+            print(f"Ennemi {eid} détruit par dash !")
 
     def render(self, surf, offset=(0, 0)):
-        # Les positions viennent du réseau : self.game.net.enemies
+        """Affiche les ennemis ronds violets à l’écran."""
         for eid, (x, y) in self.game.net.enemies.items():
             screen_x = x - offset[0]
             screen_y = y - offset[1]
-            pygame.draw.circle(surf, (128, 0, 128), (int(screen_x), int(screen_y)), 8)
-
+            pygame.draw.circle(surf, (128, 0, 128), (int(screen_x), int(screen_y)), self.radius)
+            
 class RemotePlayerRenderer:
     """Affiche et anime les autres joueurs avec leur sprite."""
 
