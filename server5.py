@@ -10,14 +10,15 @@ import miniupnpc
 class PlayerManager:
     def __init__(self):
         self.clients = {}   # addr -> id
-        self.players = {}   # id -> (x, y, vx, vy)
+        # id -> (x, y, action:str, flip:bool)
+        self.players = {}   
         self.next_id = 1
 
     def add_player(self, addr):
         pid = self.next_id
         self.next_id += 1
         self.clients[addr] = pid
-        self.players[pid] = (0, 0, 0, 0)
+        self.players[pid] = (0, 0, 'idle', False)
         return pid
 
     def remove_player(self, addr):
@@ -33,8 +34,22 @@ class PlayerManager:
         if addr not in self.clients:
             return
         pid = self.clients[addr]
-        x, y, vx, vy = struct.unpack("ffff", data)
-        self.players[pid] = (x, y, vx, vy)
+
+        if len(data) < 10:
+            return  # paquet trop court
+
+        # x, y sont les 8 premiers octets
+        x, y = struct.unpack("ff", data[:8])
+        # ensuite action_id (1 octet) et flip (1 octet)
+        action_id, flip_byte = struct.unpack("BB", data[8:10])
+        action_map = {0: 'idle', 1: 'run', 2: 'jump', 3: 'wall_slide', 4: 'slide'}
+        action = action_map.get(action_id, 'idle')
+        flip = bool(flip_byte)
+
+        self.players[pid] = (x, y, action, flip)
+        #print(f"Updated player {pid}: pos=({x}, {y}), action={action}, flip={flip}")
+
+
 
 # ==============================
 # --- Enemy Manager ---
@@ -141,9 +156,13 @@ class GameServer:
                     e['target_player'] = None
             return
 
-        # Update position joueur
-        if msg_type == 0 and addr in self.players.clients and len(data) >= 17:
-            self.players.update_player(addr, data[1:17])
+                # dans handle_message
+        if msg_type == 0 and addr in self.players.clients and len(data) >= 10:
+            self.players.update_player(addr, data[1:])  # 10 octets attendus
+
+
+
+
 
     def update_world(self):
         self.enemies.update(self.players.players)
@@ -151,8 +170,14 @@ class GameServer:
 
     def broadcast_state(self):
         payload = struct.pack("B", len(self.players.players))
-        for pid, (x, y, vx, vy) in self.players.players.items():
-            payload += struct.pack("Iffff", pid, x, y, vx, vy)
+        for pid, (x, y, action, flip) in self.players.players.items():
+            # encoder action en bytes fixes 15 octets
+            action_bytes = action.encode('utf-8')[:15]         # tronque à 15 si trop long
+            action_bytes += b'\x00' * (15 - len(action_bytes)) # complète si trop court
+            flip_byte = b'\x01' if flip else b'\x00'
+            payload += struct.pack("Iff", pid, x, y) + action_bytes + flip_byte
+
+
 
         payload += struct.pack("B", len(self.enemies.enemies))
         for eid, e in self.enemies.enemies.items():

@@ -113,12 +113,17 @@ class Game:
         self.sfx['ambience'].play(-1)
         
         while True:
-                        # envoyer la position au serveur
-            self.net.send_state(self.player.pos[0], self.player.pos[1], self.player.velocity[0], self.player.velocity[1])
+            # Définir le mapping action -> int
+            action_mapping = {"idle":0, "run":1, "jump":2, "wall_slide":3, "slide":4}
+
+            action_id = action_mapping[self.player.action]
+            flip_byte = 1 if self.player.flip else 0
+            self.net.send_state(self.player.pos[0], self.player.pos[1], action_id, flip_byte)
+
 
             # mettre à jour les autres joueurs
-            self.remote_players = self.net.players
-
+            #self.remote_players = self.net.players
+            self.remote_players = self.net.remote_players
             self.display.fill((0, 0, 0, 0))
             #self.display_2.blit(self.assets['background'], (0, 0))
             shader_surface = self.shader_bg.render()

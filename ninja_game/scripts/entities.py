@@ -193,30 +193,23 @@ class PurpleCircle:
             pygame.draw.circle(surf, (128, 0, 128), (int(screen_x), int(screen_y)), 8)
 
             
-
 class RemotePlayerRenderer:
-    """Affiche les autres joueurs (multijoueur) avec le sprite du joueur local."""
+    """Affiche les autres joueurs avec leur sprite et animation."""
+
     def __init__(self, game):
         self.game = game
-        self.player_img = self.game.assets['player/idle'].img()  # image de base
+        self.player_img = self.game.assets['player/idle'].img()
 
     def render(self, surf, offset=(0, 0)):
-        for pid, (x, y, vx, vy) in self.game.remote_players.items():
+        for pid, data in self.game.remote_players.items():
             if pid == self.game.net.id:
-                continue  # ne pas afficher soi-même
+                continue
+            
+            x, y, action, flip = data
+            #print(f"Rendering remote player {pid} at ({x}, {y}) with action '{action}' and flip={flip}")
+            anim = self.game.assets.get(f'player/{action}', self.game.assets['player/idle'])
+            img = pygame.transform.flip(anim.img(), flip, False)
+            surf.blit(img, (x - offset[0] - 3, y - offset[1] - 3))
 
-            # On peut choisir une frame d'animation différente selon la vitesse horizontale
-            if abs(vx) > 0.1:
-                anim = self.game.assets['player/run']
-            else:
-                anim = self.game.assets['player/idle']
 
-            img = anim.img()
-            flip = vx < 0  # retourner selon direction
-            img = pygame.transform.flip(img, flip, False)
-
-            surf.blit(
-                img,
-                (x - offset[0] - 3, y - offset[1] - 3)
-            )
 
