@@ -158,7 +158,7 @@ class Enemy(PhysicsEntity):
             self.set_action('idle')
             
         # Vérifie si l'ennemi est touché par le dash du joueur
-        if abs(self.game.player.dashing) >= 50:
+        if abs(self.game.player.dashing) >= 50 or self.game.player.action.startswith('attack'):
             if self.rect().colliderect(self.game.player.rect()):
                 self.game.screenshake = max(16, self.game.screenshake)
                 self.game.sfx['hit'].play()
@@ -214,7 +214,7 @@ class Player(PhysicsEntity):
             
         # Logique du "Wall Slide" (glissade sur les murs)
         self.wall_slide = False
-        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 4:
+        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 4 and not self.collisions['down']:
             self.wall_slide = True
             # Ralentit la chute
             self.velocity[1] = min(self.velocity[1], 0.5)

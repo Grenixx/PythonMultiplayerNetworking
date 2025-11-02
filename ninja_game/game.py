@@ -287,7 +287,9 @@ class Game:
                         self.player.is_pressed = 'right'
                     if event.key == pygame.K_UP or event.key == pygame.K_z:
                         self.player.is_pressed = 'up'
-                    if self.player.jump() and event.key == pygame.K_SPACE:
+                    # On vérifie d'abord la touche, PUIS on tente de sauter.
+                    if event.key == pygame.K_SPACE:
+                        if self.player.jump():
                             self.sfx['jump'].play()
                     if event.key == pygame.K_DOWN or event.key == pygame.K_s:
                         # On stocke l'information que la touche bas est pressée
