@@ -20,9 +20,9 @@ class Game:
         pygame.init()
 
         pygame.display.set_caption('ninja game')
-        self.screen = pygame.display.set_mode((640, 480))
-        self.display = pygame.Surface((320, 240), pygame.SRCALPHA)
-        self.display_2 = pygame.Surface((320, 240))
+        self.screen = pygame.display.set_mode((640, 360))
+        self.display = pygame.Surface((320, 180), pygame.SRCALPHA)
+        self.display_2 = pygame.Surface((320, 180))
 
         self.clock = pygame.time.Clock()
         
