@@ -24,7 +24,7 @@ class Game:
         pygame.display.set_caption('ninja game')
         self.screen = pygame.display.set_mode((640, 360))
         self.display = pygame.Surface((320, 180), pygame.SRCALPHA)
-        self.display_2 = pygame.Surface((320, 180), pygame.SRCALPHA)
+        self.display_2 = pygame.Surface((320, 180))
 
         self.clock = pygame.time.Clock()
         
@@ -124,106 +124,106 @@ class Game:
         self.sfx['ambience'].play(-1)
         
         while True:
-            # --- Caméra / screenshake mise à jour ---
+            # Définir le mapping action -> int
+            action_mapping = {
+                "idle": 0, "run": 1, "jump": 2, "wall_slide": 3, "slide": 4,
+                # Ajout des actions d'attaque
+                "attack_front": 5,
+                "attack_up": 6,
+                "attack_down": 7,
+            }
+
+            action_id = action_mapping[self.player.action]
+            flip_byte = 1 if self.player.flip else 0
+            self.net.send_state(self.player.pos[0], self.player.pos[1], action_id, flip_byte)
+
+
+            # mettre à jour les autres joueurs
+            #self.remote_players = self.net.players
+            self.remote_players = self.net.remote_players
+            self.display.fill((0, 0, 0, 0))
+            #self.display_2.blit(self.assets['background'], (0, 0))
+            shader_surface = self.shader_bg.render()
+            self.display_2.blit(shader_surface, (0, 0))
+            # scroll = position de la caméra dans ton jeu
+            shader_surface = self.shader_bg.render(camera=(self.scroll[0] * 0.2, self.scroll[1] * -0.2))
+            self.display_2.blit(shader_surface, (0, 0))
+
+
+
             self.screenshake = max(0, self.screenshake - 1)
+            
+            # Les ennemis sont maintenant gérés par le serveur
+            # Plus de vérification de transition basée sur les ennemis
             if self.transition < 0:
                 self.transition += 1
+            
             if self.dead:
                 self.dead += 1
                 if self.dead >= 10:
                     self.transition = min(30, self.transition + 1)
                 if self.dead > 40:
                     self.load_level(self.level)
-
+            
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 30
             render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
-            # --- Envoi de l'état au serveur ---
-            action_mapping = {
-                "idle": 0, "run": 1, "jump": 2, "wall_slide": 3, "slide": 4,
-                "attack_front": 5, "attack_up": 6, "attack_down": 7,
-            }
-            action_id = action_mapping[self.player.action]
-            flip_byte = 1 if self.player.flip else 0
-            self.net.send_state(self.player.pos[0], self.player.pos[1], action_id, flip_byte)
-
-            # --- Récupérer les joueurs distants (mis à jour par le client réseau) ---
-            self.remote_players = self.net.remote_players
-
-            # --- Clear des buffers ---
-            self.display.fill((0, 0, 0, 0))
-            self.display_2.fill((0, 0, 0, 0))
-
-            # --- Background shader (deux passes pour effet parallax léger) ---
-            shader_surface = self.shader_bg.render()
-            self.display_2.blit(shader_surface, (0, 0))
-            shader_surface = self.shader_bg.render(camera=(self.scroll[0] * 0.2, self.scroll[1] * -0.2))
-            self.display_2.blit(shader_surface, (0, 0))
-
-            # --- Mise à jour / rendu des nuages (sur display_2 au-dessus du background) ---
-            self.clouds.update()
-            self.clouds.render(self.display_2, offset=render_scroll)
-
-
-            # --- Spawning aléatoire de feuilles ---
+            
             for rect in self.leaf_spawners:
                 if random.random() * 49999 < rect.width * rect.height:
                     pos = (rect.x + random.random() * rect.width, rect.y + random.random() * rect.height)
                     self.particles.append(Particle(self, 'leaf', pos, velocity=[-0.1, 0.3], frame=random.randint(0, 20)))
-
-            # --- Rendu de la tilemap (sur self.display) ---
+            
+            self.clouds.update()
+            self.clouds.render(self.display_2, offset=render_scroll)
+            
             self.tilemap.render(self.display, offset=render_scroll)
-
-            # --- Ennemis (logique / rendu) ---
-            self.enemies_renderer.update()
+            
+            # --- Afficher les ennemis depuis le serveur (cercles violets) ---
+            # --- Rendu des ennemis ---
+            self.enemies_renderer.update()  # vérifie collisions / dash kill
             self.enemies_renderer.render(self.display, offset=render_scroll)
 
-            # --- Joueur (update + render) ---
+            
             if not self.dead:
                 self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
                 self.player.render(self.display, offset=render_scroll)
-
-            # --- Projectiles ---
+            
+            # [[x, y], direction, timer]
             for projectile in self.projectiles.copy():
                 projectile[0][0] += projectile[1]
                 projectile[2] += 1
                 img = self.assets['projectile']
-                self.display.blit(img, (projectile[0][0] - img.get_width() / 2 - render_scroll[0],
-                                        projectile[0][1] - img.get_height() / 2 - render_scroll[1]))
+                self.display.blit(img, (projectile[0][0] - img.get_width() / 2 - render_scroll[0], projectile[0][1] - img.get_height() / 2 - render_scroll[1]))
                 if self.tilemap.solid_check(projectile[0]):
                     self.projectiles.remove(projectile)
                     for i in range(4):
                         self.sparks.append(Spark(projectile[0], random.random() - 0.5 + (math.pi if projectile[1] > 0 else 0), 2 + random.random()))
                 elif projectile[2] > 360:
                     self.projectiles.remove(projectile)
-                elif abs(self.player.dashing) < 50 and self.player.rect().collidepoint(projectile[0]):
-                    self.projectiles.remove(projectile)
-                    self.dead += 1
-                    self.sfx['hit'].play()
-                    self.screenshake = max(16, self.screenshake)
-                    for i in range(30):
-                        angle = random.random() * math.pi * 2
-                        speed = random.random() * 5
-                        self.sparks.append(Spark(self.player.rect().center, angle, 2 + random.random()))
-                        self.particles.append(Particle(self, 'particle', self.player.rect().center,
-                                                    velocity=[math.cos(angle + math.pi) * speed * 0.5,
-                                                                math.sin(angle + math.pi) * speed * 0.5],
-                                                    frame=random.randint(0, 7)))
-
-            # --- Sparks (update + render) ---
+                elif abs(self.player.dashing) < 50:
+                    if self.player.rect().collidepoint(projectile[0]):
+                        self.projectiles.remove(projectile)
+                        self.dead += 1
+                        self.sfx['hit'].play()
+                        self.screenshake = max(16, self.screenshake)
+                        for i in range(30):
+                            angle = random.random() * math.pi * 2
+                            speed = random.random() * 5
+                            self.sparks.append(Spark(self.player.rect().center, angle, 2 + random.random()))
+                            self.particles.append(Particle(self, 'particle', self.player.rect().center, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
+                        
             for spark in self.sparks.copy():
                 kill = spark.update()
                 spark.render(self.display, offset=render_scroll)
                 if kill:
                     self.sparks.remove(spark)
-
-            # --- Silhouette (outline) basé sur la mask de display, blité sur display_2 ---
+                    
             display_mask = pygame.mask.from_surface(self.display)
             display_sillhouette = display_mask.to_surface(setcolor=(0, 0, 0, 180), unsetcolor=(0, 0, 0, 0))
             for offset in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                 self.display_2.blit(display_sillhouette, offset)
-
-            # --- Particles (update + render) ---
+            
             for particle in self.particles.copy():
                 kill = particle.update()
                 particle.render(self.display, offset=render_scroll)
@@ -231,14 +231,17 @@ class Game:
                     particle.pos[0] += math.sin(particle.animation.frame * 0.035) * 0.3
                 if kill:
                     self.particles.remove(particle)
-
-            # --- Input events ---
+            
+            # (le reste de ta boucle inchangé)
             for event in pygame.event.get():
+                # Si l'utilisateur ferme la fenêtre
                 if event.type == pygame.QUIT:
                     self.net.disconnect()
                     pygame.quit()
                     sys.exit()
+                # Si une touche est pressée
                 if event.type == pygame.KEYDOWN:
+                    # Mouvement horizontal
                     if event.key == pygame.K_LEFT or event.key == pygame.K_q:
                         self.movement[0] = True
                         self.player.is_pressed = 'left'
@@ -247,22 +250,29 @@ class Game:
                         self.player.is_pressed = 'right'
                     if event.key == pygame.K_UP or event.key == pygame.K_z:
                         self.player.is_pressed = 'up'
+                    # On vérifie d'abord la touche, PUIS on tente de sauter.
                     if event.key == pygame.K_SPACE:
                         if self.player.request_jump():
                             self.sfx['jump'].play()
                     if event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                        # On stocke l'information que la touche bas est pressée
                         self.player.is_pressed = 'down'
                     if event.key == pygame.K_x or event.key == pygame.K_LSHIFT:
                         self.player.dash()
-                if event.type == pygame.KEYUP:
+                # Si une touche est relâchée
+                if event.type == pygame.KEYUP or event.type == pygame.K_SPACE:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_q:
                         self.movement[0] = False
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         self.movement[1] = False
+                    # Si on relâche une touche directionnelle, on réinitialise la variable
                     if event.key in [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_d, pygame.K_a, pygame.K_SPACE, pygame.K_s]:
                         self.player.is_pressed = None
+                # Si un bouton de la souris est pressé
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:
+                    if event.button == 1:  # Clic gauche
+                        # Vérifie les touches actuellement maintenues
+
                         keys = pygame.key.get_pressed()
                         if keys[pygame.K_UP] or keys[pygame.K_z]:
                             direction = 'up'
@@ -273,59 +283,58 @@ class Game:
                         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                             direction = 'right'
                         else:
-                            direction = None
+                            direction = None  # aucune direction active
+    
                         self.player.attack(direction)
 
-            # --- Controller (manette) handling ---
-            self.controller.update()
-            if self.controller.joystick:
+            self.controller.update() #Pour la mannette
+            if self.controller.joystick:  # Si une manette est connectée
                 if self.controller.button_a:
                     if self.player.jump():
                         self.sfx['jump'].play()
                 if self.controller.button_b:
                     self.player.dash()
-                # Stick / dpad horizontal
+
+                # Mouvement avec le stick ou D-pad :
                 move_x = 0
                 if self.controller.left_stick_x < -0.5 or self.controller.dpad_left:
                     move_x = -1
                 elif self.controller.left_stick_x > 0.5 or self.controller.dpad_right:
                     move_x = 1
                 self.movement = [move_x < 0, move_x > 0]
-                # Triggers as dash
+
+                # Gâchettes :
                 if self.controller.left_trigger > 0.2:
                     self.player.dash()
                 if self.controller.right_trigger > 0.2:
                     self.player.dash()
 
-            # --- Transition circle (si actif) ---
+                        
             if self.transition:
-                transition_surf = pygame.Surface(self.display.get_size(), pygame.SRCALPHA)
-                pygame.draw.circle(transition_surf, (255, 255, 255), (self.display.get_width() // 2, self.display.get_height() // 2),
-                                (30 - abs(self.transition)) * 8)
+                transition_surf = pygame.Surface(self.display.get_size())
+                pygame.draw.circle(transition_surf, (255, 255, 255), (self.display.get_width() // 2, self.display.get_height() // 2), (30 - abs(self.transition)) * 8)
                 transition_surf.set_colorkey((255, 255, 255))
                 self.display.blit(transition_surf, (0, 0))
+            
 
-            # --- Remote players renderer (draw onto display) ---
-            self.remote_players_renderer.render(self.display, offset=render_scroll)
 
-            # --- Composer la scène finale : blit de display (map + entités) sur display_2 ---
+            # --- COMPOSITION FINALE ---
+            # On blitte la tilemap et les entités sur display_2
             self.display_2.blit(self.display, (0, 0))
 
-            # --- Lumières actives (player + exemples) ---
-            light_sources = [
-                (
-                    self.player.rect().centerx - render_scroll[0],
-                    self.player.rect().centery - render_scroll[1],
-                    150,
-                    (220, 240, 255)
-                )
-            ]
-            # (ajoute d'autres lumières si tu veux, par ex. torches)
+            # --- afficher les autres joueurs ---
+            self.remote_players_renderer.render(self.display, offset=render_scroll)
+            self.display_2.blit(self.display, (0, 0))
 
-            # --- Appliquer le système d'éclairage sur la scène complète ---
+            # --- APPLICATION DE L’ÉCLAIRAGE APRÈS TOUT ---
+            light_sources = [
+                (self.player.rect().centerx - render_scroll[0],
+                self.player.rect().centery - render_scroll[1],
+                150, (220, 240, 255))
+            ]
             self.lighting.render(self.display_2, light_sources, pygame.time.get_ticks())
 
-            # --- Affichage final avec screenshake ---
+            # --- AFFICHAGE FINAL ---
             screenshake_offset = (
                 random.random() * self.screenshake - self.screenshake / 2,
                 random.random() * self.screenshake - self.screenshake / 2
