@@ -315,29 +315,31 @@ class Game:
                 pygame.draw.circle(transition_surf, (255, 255, 255), (self.display.get_width() // 2, self.display.get_height() // 2), (30 - abs(self.transition)) * 8)
                 transition_surf.set_colorkey((255, 255, 255))
                 self.display.blit(transition_surf, (0, 0))
-
-            # --- Gestion de la lumière dynamique ---
-            self.lighting.clear()
-
-            # Lumière du joueur principale
-            player_light_pos = (
-                int(self.player.rect().centerx - self.scroll[0]),
-                int(self.player.rect().centery - self.scroll[1])
-            )
-            self.lighting.draw_light(player_light_pos, radius=200, intensity=1.2, color=(255, 240, 200))
-
-            self.lighting.apply(self.display)
-            #--- Fin de la gestion de la lumière dynamique ---
             
+
+            # --- ÉCLAIRAGE ---
+            light_sources = [
+                (self.player.rect().centerx - render_scroll[0],
+                self.player.rect().centery - render_scroll[1],
+                150)
+            ]
+
+            # Exemple : tu peux ajouter d'autres lumières statiques
+            # light_sources.append((100, 80, 120))
+            # light_sources.append((200, 150, 80))
+
+            self.lighting.render(self.display, light_sources, pygame.time.get_ticks())
+
             # --- afficher les autres joueurs ---
             self.remote_players_renderer.render(self.display, offset=render_scroll)
-
 
             self.display_2.blit(self.display, (0, 0))
             
             screenshake_offset = (random.random() * self.screenshake - self.screenshake / 2, random.random() * self.screenshake - self.screenshake / 2)
             self.screen.blit(pygame.transform.scale(self.display_2, self.screen.get_size()), screenshake_offset)
 
+
+            
 
             pygame.display.update()
             self.clock.tick(60)
