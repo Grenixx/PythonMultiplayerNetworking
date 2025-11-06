@@ -6,7 +6,8 @@ import random
 import pygame
 
 from scripts.utils import load_image, load_images, Animation
-from scripts.entities import PhysicsEntity, Player, PurpleCircle, RemotePlayerRenderer, Weapon
+from scripts.entities import PhysicsEntity, Player, PurpleCircle, RemotePlayerRenderer
+from scripts.weapon import Weapon
 from scripts.tilemap import Tilemap
 from scripts.clouds import Clouds
 from scripts.particle import Particle
