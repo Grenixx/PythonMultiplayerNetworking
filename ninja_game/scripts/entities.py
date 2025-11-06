@@ -252,9 +252,10 @@ class Lance:
             self.attack_timer = max(0, self.attack_timer - 1)
 
     def rect(self):
-        # La hitbox suit maintenant le mouvement de l'arme
-        pos = self.get_render_pos((0, 0)) # On récupère la position sans l'offset de la caméra
-        return pygame.Rect(pos[0], pos[1], self.image.get_width(), self.image.get_height())
+        pos = self.get_render_pos((0, 0))
+        rotated_image = pygame.transform.rotate(self.image, self.angle)
+        return rotated_image.get_rect(topleft=pos)
+
 
     def get_render_pos(self, offset):
         # Calcule la position de l'arme en fonction de la progression de l'attaque
