@@ -304,6 +304,13 @@ class Lance:
             rotated_image = pygame.transform.rotate(self.image, self.angle)
             surf.blit(rotated_image, pos)
 
+            # --- DEBUG : DESSINE LA HITBOX EN ROUGE ---
+            hitbox = self.rect()
+            pygame.draw.rect(surf, (255, 0, 0), 
+                            pygame.Rect(hitbox.x - offset[0], hitbox.y - offset[1],
+                                        hitbox.width, hitbox.height), 2)
+
+
     def swing(self, direction): #angle en degres
         self.attack_timer = self.attack_duration
         self.attack_direction = direction if direction in ['up', 'down'] else 'front'
