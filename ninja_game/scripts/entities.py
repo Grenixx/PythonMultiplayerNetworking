@@ -95,10 +95,10 @@ class Player(PhysicsEntity):
         self.weapon = Weapon(self)
     
     def update(self, tilemap, movement=(0, 0)):
-        super().update(tilemap, movement=movement)
+        super().update(tilemap, movement=movement) 
         self.air_time += 1
         
-        self.weapon.update()
+        self.weapon.weapon_equiped.update()
         self.jump_buffer_timer = max(0, self.jump_buffer_timer - 1)
 
         if self.air_time > 120:
@@ -169,7 +169,7 @@ class Player(PhysicsEntity):
         if abs(self.dashing) <= 50:
             super().render(surf, offset=offset)
             # Puis on dessine l'arme par-dessus pour qu'elle soit devant
-            self.weapon.render(surf, offset)
+            self.weapon.weapon_equiped.render(surf, offset)
             
     def jump(self):
         if self.wall_slide:
@@ -194,6 +194,9 @@ class Player(PhysicsEntity):
             self.jump_buffer_timer = 0 # On a sauté, on annule le buffer
             return True
     
+        # Si aucune des conditions de saut n'est remplie
+        return False
+
     def dash(self):
         if not self.dashing:
             self.game.sfx['dash'].play()
@@ -229,15 +232,16 @@ class Player(PhysicsEntity):
             # Par défaut (aucune touche directionnelle prioritaire), on fait une attaque frontale.
             self.set_action('attack_' + attack_direction)
             # On déclenche l'animation de l'arme
-            self.weapon.swing(direction)
+            self.weapon.weapon_equiped.swing(direction)
 
-            print(f"Action set to {self.action}, weapon swinging {attack_direction}")
+            print(f"Action set to {self.action}, weapon swinging {attack_direction}") 
             # On pourrait jouer un son ici : self.game.sfx['hit'].play()
 
-class Weapon:
+class Lance:
+    """Classe gérant une arme de type lance."""
     def __init__(self, owner): #owner sera generalement le joueur
         self.owner = owner
-        self.image = owner.game.assets['weapon']
+        self.image = owner.game.assets['lance']
         self.angle = 0
         self.attack_duration = 15 # Durée totale de l'attaque en frames
         self.attack_timer = 0
@@ -317,8 +321,72 @@ class Weapon:
                 self.angle = 0
         print(f"Swing direction: {direction}, Player flip: {self.owner.flip}, Final angle: {self.angle}")
 
+class Mace:
+    """Classe gérant une arme de type mace."""
+    def __init__(self, owner): #owner sera generalement le joueur
+        self.owner = owner
+        # On copie l'animation pour que chaque instance de Mace ait son propre état
+        original_animation = owner.game.assets['mace'].copy()
+        # On redimensionne chaque image de l'animation
+        scaled_images = []
+        for img in original_animation.images:
+            scaled_images.append(pygame.transform.scale(img, (img.get_width() // 4, img.get_height() // 4)))
+        self.animation = owner.game.assets['mace'].__class__(scaled_images, original_animation.img_duration, original_animation.loop)
+        self.attack_timer = 0
 
-import math
+    def update(self):
+        if self.attack_timer > 0:
+            self.attack_timer = max(0, self.attack_timer - 1)
+            self.animation.update()
+
+    def rect(self):
+        # La hitbox suit maintenant le mouvement de l'arme
+        pos = self.get_render_pos((0, 0)) # On récupère la position sans l'offset de la caméra
+        current_image = self.animation.img()
+        return pygame.Rect(pos[0], pos[1], current_image.get_width(), current_image.get_height())
+
+    def get_render_pos(self, offset):
+        # Calcule la position de l'arme
+        center_x = self.owner.rect().centerx - offset[0]
+        center_y = self.owner.rect().centery - offset[1]
+        
+        image_to_render = self.animation.img()
+ 
+        pos_y = center_y - image_to_render.get_height() // 2 - 10
+        if self.owner.flip:
+            pos_x = center_x - image_to_render.get_width()
+        else:
+            pos_x = center_x
+
+        return (pos_x, pos_y)
+
+    def render(self, surf, offset=(0, 0)):
+        # On ne dessine l'arme que si elle est en train d'attaquer
+        if self.attack_timer > 0:
+            image_to_render = self.animation.img()
+            # On utilise flip pour le retournement horizontal
+            image_to_render = pygame.transform.flip(image_to_render, self.owner.flip, False)
+            pos = self.get_render_pos(offset)
+            surf.blit(image_to_render, pos)
+
+    def swing(self, direction): #angle en degres
+        # La durée de l'attaque est maintenant définie par la durée de l'animation
+        self.attack_timer = self.animation.img_duration * len(self.animation.images)
+        self.animation.frame = 0 # On réinitialise l'animation
+
+class Weapon:
+    """Classe qui gère l'arme actuellement équipée par le joueur."""
+    def __init__(self, owner, weapon_type='lance'):
+        self.owner = owner
+        if weapon_type == 'lance':
+            self.weapon_equiped = Lance(owner)
+        elif weapon_type == 'mace':
+            self.weapon_equiped = Mace(owner)
+        else:
+            # On pourrait imaginer d'autres types d'armes ici
+            self.weapon_equiped = Lance(owner) # Par défaut
+
+
 class PurpleCircle:
     """Classe gérant les ennemis ronds violets + collisions avec le joueur."""
     def __init__(self, game):
@@ -333,14 +401,14 @@ class PurpleCircle:
         player = self.game.player
         player_center = player.rect().center
         is_dashing = abs(self.game.player.dashing) > 50
-        is_attacking = player.weapon.attack_timer > 0
+        is_attacking = player.weapon.weapon_equiped.attack_timer > 0
         
         # Si aucune action offensive n'est en cours, on ne fait rien.
         if not is_dashing and not is_attacking:
             return
             
         to_remove = []
-        weapon_rect = player.weapon.rect()
+        weapon_rect = player.weapon.weapon_equiped.rect()
         
         for eid, (ex, ey) in list(self.game.net.enemies.items()):
             enemy_rect = pygame.Rect(ex - self.radius, ey - self.radius, self.radius * 2, self.radius * 2)

@@ -6,7 +6,7 @@ import random
 import pygame
 
 from scripts.utils import load_image, load_images, Animation
-from scripts.entities import PhysicsEntity, Player, PurpleCircle, RemotePlayerRenderer
+from scripts.entities import PhysicsEntity, Player, PurpleCircle, RemotePlayerRenderer, Weapon
 from scripts.tilemap import Tilemap
 from scripts.clouds import Clouds
 from scripts.particle import Particle
@@ -52,7 +52,8 @@ class Game:
             'particle/particle': Animation(load_images('particles/particle'), img_dur=6, loop=False),
             'gun': load_image('gun.png'),
             'projectile': load_image('projectile.png'),
-            'weapon': load_image('entities/weapon/weapon2.png')
+            'lance': load_image('entities/weapon/lance.png'),
+            'mace': Animation(load_images('entities/weapon/mace'), img_dur=5, loop=False),
         }
         
         self.sfx = {
@@ -92,6 +93,9 @@ class Game:
         self.controller = Controller()
 
         self.lighting = LightingSystem(self.display.get_size())
+
+        self.weapon_type = 'lance' # On commence avec la lance
+
 
         
     def load_level(self, map_id):
@@ -233,6 +237,7 @@ class Game:
                     self.particles.remove(particle)
             
             # (le reste de ta boucle inchangé)
+             # (le reste de ta boucle inchangé)
             for event in pygame.event.get():
                 # Si l'utilisateur ferme la fenêtre
                 if event.type == pygame.QUIT:
@@ -259,6 +264,10 @@ class Game:
                         self.player.is_pressed = 'down'
                     if event.key == pygame.K_x or event.key == pygame.K_LSHIFT:
                         self.player.dash()
+                    if event.key == pygame.K_c:
+                        self.weapon_type = 'mace' if self.weapon_type == 'lance' else 'lance'
+                        self.player.weapon = Weapon(self.player, self.weapon_type)
+                        print(f"Arme changée en : {self.weapon_type}")
                 # Si une touche est relâchée
                 if event.type == pygame.KEYUP or event.type == pygame.K_SPACE:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_q:
@@ -272,7 +281,6 @@ class Game:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:  # Clic gauche
                         # Vérifie les touches actuellement maintenues
-
                         keys = pygame.key.get_pressed()
                         if keys[pygame.K_UP] or keys[pygame.K_z]:
                             direction = 'up'
@@ -284,7 +292,7 @@ class Game:
                             direction = 'right'
                         else:
                             direction = None  # aucune direction active
-    
+
                         self.player.attack(direction)
 
             self.controller.update() #Pour la mannette
