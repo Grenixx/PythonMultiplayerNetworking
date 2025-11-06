@@ -166,27 +166,10 @@ class Player(PhysicsEntity):
         else:
             self.velocity[0] = min(self.velocity[0] + 0.1, 0)
         
-        if hasattr(self.game.tilemap, 'grass_manager'):
-            ts = self.game.tilemap.tile_size
-
-            # on calcule la "vitesse" effective (input + velocity)
-            input_speed = math.hypot(self.last_movement[0], self.last_movement[1])
-            vel_speed = math.hypot(self.velocity[0], self.velocity[1])
-            speed = input_speed + vel_speed
-
-            # Si on bouge (ou si on dash), applique une impulsion — sinon ne rien faire
-            # Ajuste threshold selon ton besoin (0.1 = très sensible)
-            if speed > 0.1 or abs(self.dashing) > 0:
-                # utilise la center en pixels
-                force_pos = self.rect().center
-
-                # rayon et dropoff en pixels (ex: 2.5 tiles et 1.2 tiles)
-                radius_px = int(ts * 2.5)
-                dropoff_px = int(ts * 1.2)
-
-                # applique la force UNE FOIS pour cette frame (si tu veux un "sweep" prolongé
-                # tu peux appliquer un petit nombre de frames, mais pas chaque frame)
-                self.game.tilemap.grass_manager.apply_force(force_pos, radius_px, dropoff_px)
+        
+        force_pos = self.rect().center  # (x_pixels, y_pixels)
+        #self.game.tilemap.grass_manager.update_render(self.game.display,1/60, offset=self.game.scroll)
+        self.game.tilemap.grass_manager.apply_force(force_pos, 6, 12)
 
     
     def render(self, surf, offset=(0, 0)):
@@ -307,6 +290,7 @@ class PurpleCircle:
             # Envoie la suppression au serveur
             self.game.net.remove_enemy(eid)
             print(f"Ennemi {eid} détruit !")
+        
 
     def render(self, surf, offset=(0, 0)):
         """Affiche les ennemis ronds violets à l’écran."""
@@ -359,3 +343,6 @@ class RemotePlayerRenderer:
 
             self.players[pid].update((x,y), action, flip)
             self.players[pid].render(surf, offset)
+
+
+            
