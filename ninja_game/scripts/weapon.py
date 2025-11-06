@@ -1,32 +1,62 @@
 import pygame
+import math
+import random
 
-class Lance:
-    """Classe gérant une arme de type lance."""
+# --- Classe de base pour toutes les armes ---
+class WeaponBase:
+    """Classe de base pour toutes les armes : gère le rendu, le timer, le mode debug."""
+    debug = True  # Mode debug global
+
     def __init__(self, owner):
         self.owner = owner
-        self.image = owner.game.assets['lance']
-        self.angle = 0
-        self.attack_duration = 15
         self.attack_timer = 0
+        self.attack_duration = 15
         self.attack_direction = 'front'
+        self.angle = 0
+
+    def toggle_debug(self):
+        """Active/désactive le mode debug."""
+        WeaponBase.debug = not WeaponBase.debug
+        print(f"[DEBUG] Mode debug arme {'activé' if WeaponBase.debug else 'désactivé'}")
 
     def update(self):
+        """Met à jour le timer d'attaque."""
         if self.attack_timer > 0:
             self.attack_timer = max(0, self.attack_timer - 1)
 
-    def rect(self):
-        pos = self.get_render_pos((0, 0))
-        rotated_image = pygame.transform.rotate(self.image, self.angle)
-        return rotated_image.get_rect(topleft=pos)
+    def swing(self, direction):
+        """Déclenche une attaque dans une direction donnée."""
+        self.attack_timer = self.attack_duration
+        self.attack_direction = direction
+        print(f"[DEBUG] Swing: {direction}")
+
+    def render_debug_hitbox(self, surf, rect, offset):
+        """Affiche le rectangle de collision (si le debug est actif)."""
+        if WeaponBase.debug:
+            pygame.draw.rect(
+                surf, (255, 0, 0),
+                pygame.Rect(rect.x - offset[0], rect.y - offset[1], rect.width, rect.height),
+                2
+            )
+
+
+# --- Classe Lance héritant de WeaponBase ---
+class Lance(WeaponBase):
+    def __init__(self, owner):
+        super().__init__(owner)
+        self.image = owner.game.assets['lance']
+        self.attack_duration = 15
+        self.max_thrust = 16
+        self.retract_distance = 4
 
     def get_render_pos(self, offset):
+        """Calcule la position d’affichage en fonction de l’état de l’attaque."""
         center_x = self.owner.rect().centerx - offset[0]
         center_y = self.owner.rect().centery - offset[1]
 
         progress = (self.attack_duration - self.attack_timer) / self.attack_duration
-        max_thrust = 16
-        retract_distance = 4
-        
+        progress = max(0.0, min(1.0, progress))
+
         if progress < 0.3:
             thrust_progress = progress / 0.3
         elif progress < 0.6:
@@ -34,7 +64,7 @@ class Lance:
         else:
             thrust_progress = 1.0 - ((progress - 0.6) / 0.4)
 
-        thrust = thrust_progress * max_thrust - retract_distance
+        thrust = thrust_progress * self.max_thrust - self.retract_distance
         rotated_image = pygame.transform.rotate(self.image, self.angle)
 
         if self.attack_direction == 'up':
@@ -52,78 +82,101 @@ class Lance:
 
         return (pos_x, pos_y)
 
+    def rect(self):
+        """Retourne le rectangle de collision pour les tests et le debug."""
+        pos = self.get_render_pos((0, 0))
+        rotated_image = pygame.transform.rotate(self.image, self.angle)
+        return rotated_image.get_rect(topleft=pos)
+
     def render(self, surf, offset=(0, 0)):
         if self.attack_timer > 0:
             pos = self.get_render_pos(offset)
             rotated_image = pygame.transform.rotate(self.image, self.angle)
             surf.blit(rotated_image, pos)
-            # hitbox debug
-            hitbox = self.rect()
-            pygame.draw.rect(surf, (255, 0, 0),
-                             pygame.Rect(hitbox.x - offset[0], hitbox.y - offset[1],
-                                         hitbox.width, hitbox.height), 2)
+
+            # mode debug : afficher la hitbox
+            self.render_debug_hitbox(surf, self.rect(), offset)
 
     def swing(self, direction):
-        self.attack_timer = self.attack_duration
-        self.attack_direction = direction if direction in ['up', 'down'] else 'front'
-
+        super().swing(direction)
         if direction == 'up':
             self.angle = 90
         elif direction == 'down':
             self.angle = -90
         else:
             self.angle = 180 if self.owner.flip else 0
-        print(f"Swing direction: {direction}, Player flip: {self.owner.flip}, Final angle: {self.angle}")
+        print(f"[DEBUG] Lance swing {direction}, angle={self.angle}, flip={self.owner.flip}")
 
 
-class Mace:
-    """Classe gérant une arme de type masse."""
+# --- Classe Mace héritant de WeaponBase ---
+class Mace(WeaponBase):
     def __init__(self, owner):
-        self.owner = owner
+        super().__init__(owner)
         original_animation = owner.game.assets['mace'].copy()
-        scaled_images = []
-        for img in original_animation.images:
-            scaled_images.append(pygame.transform.scale(img, (img.get_width() // 4, img.get_height() // 4)))
-        self.animation = owner.game.assets['mace'].__class__(scaled_images, original_animation.img_duration, original_animation.loop)
-        self.attack_timer = 0
+        scaled_images = [
+            pygame.transform.scale(img, (img.get_width() // 4, img.get_height() // 4))
+            for img in original_animation.images
+        ]
+        self.animation = original_animation.__class__(
+            scaled_images, original_animation.img_duration, original_animation.loop
+        )
 
     def update(self):
+        super().update()
         if self.attack_timer > 0:
-            self.attack_timer = max(0, self.attack_timer - 1)
             self.animation.update()
-
-    def rect(self):
-        pos = self.get_render_pos((0, 0))
-        current_image = self.animation.img()
-        return pygame.Rect(pos[0], pos[1], current_image.get_width(), current_image.get_height())
 
     def get_render_pos(self, offset):
         center_x = self.owner.rect().centerx - offset[0]
         center_y = self.owner.rect().centery - offset[1]
-        image_to_render = self.animation.img()
-        pos_y = center_y - image_to_render.get_height() // 2 - 10
-        pos_x = center_x - image_to_render.get_width() if self.owner.flip else center_x
+        image = self.animation.img()
+        pos_y = center_y - image.get_height() // 2 - 10
+        pos_x = center_x - image.get_width() if self.owner.flip else center_x
         return (pos_x, pos_y)
+
+    def rect(self):
+        pos = self.get_render_pos((0, 0))
+        image = self.animation.img()
+        return pygame.Rect(pos[0], pos[1], image.get_width(), image.get_height())
 
     def render(self, surf, offset=(0, 0)):
         if self.attack_timer > 0:
-            image_to_render = self.animation.img()
-            image_to_render = pygame.transform.flip(image_to_render, self.owner.flip, False)
+            image = self.animation.img()
+            image = pygame.transform.flip(image, self.owner.flip, False)
             pos = self.get_render_pos(offset)
-            surf.blit(image_to_render, pos)
+            surf.blit(image, pos)
+            self.render_debug_hitbox(surf, self.rect(), offset)
 
     def swing(self, direction):
+        super().swing(direction)
         self.attack_timer = self.animation.img_duration * len(self.animation.images)
         self.animation.frame = 0
 
 
+# --- Classe Weapon gérant l’arme équipée ---
 class Weapon:
-    """Classe qui gère l'arme actuellement équipée par le joueur."""
+    """Gestionnaire d’arme : choisit l’arme active (lance, masse, etc.)"""
     def __init__(self, owner, weapon_type='lance'):
         self.owner = owner
+        self.weapon_type = weapon_type
+        self.set_weapon(weapon_type)
+
+    def set_weapon(self, weapon_type):
+        """Change le type d’arme actuellement équipée."""
         if weapon_type == 'lance':
-            self.weapon_equiped = Lance(owner)
+            self.weapon_equiped = Lance(self.owner)
         elif weapon_type == 'mace':
-            self.weapon_equiped = Mace(owner)
+            self.weapon_equiped = Mace(self.owner)
         else:
-            self.weapon_equiped = Lance(owner)
+            self.weapon_equiped = Lance(self.owner)
+        self.weapon_type = weapon_type
+        print(f"[DEBUG] Arme équipée : {self.weapon_type}")
+
+    def update(self):
+        self.weapon_equiped.update()
+
+    def render(self, surf, offset=(0, 0)):
+        self.weapon_equiped.render(surf, offset)
+
+    def swing(self, direction):
+        self.weapon_equiped.swing(direction)
