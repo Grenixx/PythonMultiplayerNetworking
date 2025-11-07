@@ -327,7 +327,7 @@ class Game:
             
             #self.tilemap.grass_manager.update_render(self.display,1/60, offset=self.scroll)
             #gd.grass_manager.update_render(display, 1 / 60, offset=gd.scroll.copy(), rot_function=lambda x, y: int(math.sin(x / 100 + global_time / 40) * 30) / 10)
-            self.tilemap.grass_manager.update_render(self.display, 1/60, offset=self.scroll, rot_function=lambda x, y: int(math.sin(x / 100 + pygame.time.get_ticks() / 300) * 30) / 10)
+            self.tilemap.grass_manager.update_render(self.display, 1/10, offset=self.scroll, rot_function=lambda x, y: int(math.sin(x / 100 + pygame.time.get_ticks() / 300) * 30) / 10)
 
             #self.tilemap.grass_manager.apply_force(self.player.pos, 12, 24)
             #positions = {}
