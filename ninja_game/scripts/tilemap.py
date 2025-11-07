@@ -111,14 +111,14 @@ class Tilemap:
                 tile['variant'] = AUTOTILE_MAP[neighbors]
 
     
-    # 🌿 AJOUT — génération d’herbe sur les tuiles "grass"
     def generate_grass(self):
         for loc, tile in self.tilemap.items():
-            if tile['type'] == 'grassSpawner':
-                pos = (tile['pos'][0], tile['pos'][1])
+            if tile['type'] == 'grass' and tile['variant'] == 1:
+                # position en TUILES
+                pos = (tile['pos'][0], tile['pos'][1] - 1)  # léger décalage vers le haut
                 density = random.randint(3, 7)
-                # IDs [0, 1, 2] -> images dans assets/grass/
                 self.grass_manager.place_tile(pos, density, [0, 1, 2])
+
 
     
     # 🌿 MODIFIÉ — ajout du paramètre dt

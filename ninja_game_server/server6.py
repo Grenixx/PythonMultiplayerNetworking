@@ -122,7 +122,6 @@ class GameServer:
         msg_type = data[0]
 
         # --- Connexion ---
-        # --- Connexion ---
         if msg_type == 10:  # 10 = connexion
             if addr not in self.players.clients:
                 pid = self.players.add_player(addr)

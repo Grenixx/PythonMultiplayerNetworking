@@ -303,7 +303,7 @@ class PurpleCircle:
             screen_x = x - offset[0]
             screen_y = y - offset[1]
             pygame.draw.circle(surf, (128, 0, 128), (int(screen_x), int(screen_y)), self.radius)
-            #self.game.tilemap.grass_manager.apply_force((x, y), 6, 12)
+            self.game.tilemap.grass_manager.apply_force((x, y), 6, 12)
             
             
             

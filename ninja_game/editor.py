@@ -127,6 +127,8 @@ class Editor:
                         self.tilemap.autotile()
                     if event.key == pygame.K_o:
                         self.tilemap.save('map.json')
+                        self.tilemap.save('data/maps/map.json')
+                        self.tilemap.save('../ninja_game_server/data/maps/map.json')
                         print('Map saved to map.json')
                     if event.key == pygame.K_LSHIFT:
                         self.shift = True
