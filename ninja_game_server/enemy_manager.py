@@ -1,4 +1,5 @@
 import random
+from math import *
 
 class EnemyManager:
     def __init__(self, tilemap, num_enemies=20, speed=0.5):
@@ -27,6 +28,7 @@ class EnemyManager:
             return
 
         for eid, enemy in self.enemies.items():
+            pos = [enemy['x'], enemy['y']]
 
             # --- Gravité ---
             #if not self.tilemap.solid_check((ex, ey + 4)):
@@ -35,14 +37,31 @@ class EnemyManager:
              #   enemy['vy'] = 0
 
             # --- Trouver la cible la plus proche ---
+            closest_dist = None
+            closest_pid = None
+            for pid in players.keys():
+                dist = distance_squared_to(pos, players[pid])
+                if closest_dist == None or closest_dist > dist:
+                    closest_dist,closest_pid = dist,pid
+
             enemy['target_player'] = closest_pid
 
+            step = [0,0]
+            dist = distane_to(pos, players[closest_pid])
+            if dist > 1:
+                step = normalized(vector_to(pos, players[closest_pid]))
+                step = [i * self.speed for i in step]
 
             # --- Test collisions map ---
+            new_x = pos[0] + step[0]
+            new_y = pos[1] + step[1]
 
+            if not self.tilemap.solid_check((new_x, pos[1])):
                 enemy['x'] = new_x
             else:
+                enemy['vx'] = 0
 
+            if not self.tilemap.solid_check((pos[0], new_y)):
                 enemy['y'] = new_y
             else:
                 enemy['vy'] = 0
@@ -50,3 +69,23 @@ class EnemyManager:
             # Limites de la map
             enemy['x'] = max(0, min(enemy['x'], 1000))
             enemy['y'] = max(0, min(enemy['y'], 1000))
+
+def vector_to(pos1: list,pos2: list):
+    """
+    Renvoie un vecteur de la position 1 vers 2
+    """
+    return [pos2[0] - pos1[0], pos2[1] - pos1[1]]
+
+def distance_squared_to(pos1: list,pos2: list):
+    return (pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2
+
+def distane_to(pos1: list,pos2: list):
+    return sqrt(distance_squared_to(pos1,pos2))
+
+def normalized(vec: list):
+    norm = distane_to([0,0],vec)
+    vec = [i/norm for i in vec]
+    return vec
+
+def is_normalized(vec: list):
+    return vec == normalized(vec)
