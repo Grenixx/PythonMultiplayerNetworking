@@ -97,8 +97,15 @@ class GameServer:
         print("Serveur en cours d’exécution...")
         try:
             while True:
-                data, addr = self.sock.recvfrom(1024)
-                self.handle_message(data, addr)
+                try:
+                    data, addr = self.sock.recvfrom(1024)
+                    self.handle_message(data, addr)
+                except ConnectionResetError:
+                    # Ignore les erreurs quand un client quitte brutalement
+                    continue
+                except OSError as e:
+                    print("Erreur socket:", e)
+                    continue
 
                 now = time.time()
                 if now - self.last_update >= self.rate:

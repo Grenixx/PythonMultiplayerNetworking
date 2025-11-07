@@ -19,7 +19,8 @@ class ClientNetwork:
 
     def connect(self):
         # message de type 10 = demande de connexion
-        self.sock.sendto(b'\x0A', self.server)  # 0x0A = 10
+        self.sock.sendto(b'\x0A', self.server)
+
         while self.id is None:
             try:
                 data, _ = self.sock.recvfrom(4)
@@ -27,7 +28,13 @@ class ClientNetwork:
                     self.id = struct.unpack("I", data)[0]
                     print(f"Connected with ID {self.id}")
             except socket.timeout:
-                pass
+                print("Tentative de connexion au serveur...")
+                pass  # On attend simplement
+            except ConnectionResetError:
+                # Sur Windows, UDP peut provoquer cette erreur si le serveur n'est pas encore prêt
+                print("Serveur injoignable, nouvelle tentative...")
+                time.sleep(0.5)
+                self.sock.sendto(b'\x0A', self.server)
 
 
     def listen(self):

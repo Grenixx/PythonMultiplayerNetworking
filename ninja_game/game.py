@@ -269,7 +269,6 @@ class Game:
                     if event.key == pygame.K_c:
                         self.weapon_type = 'mace' if self.weapon_type == 'lance' else 'lance'
                         self.player.weapon = Weapon(self.player, self.weapon_type)
-                        print(f"Arme changée en : {self.weapon_type}")
                 # Si une touche est relâchée
                 if event.type == pygame.KEYUP or event.type == pygame.K_SPACE:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_q:
@@ -326,7 +325,10 @@ class Game:
                 transition_surf.set_colorkey((255, 255, 255))
                 self.display.blit(transition_surf, (0, 0))
             
-            self.tilemap.grass_manager.update_render(self.display,1/60, offset=self.scroll)
+            #self.tilemap.grass_manager.update_render(self.display,1/60, offset=self.scroll)
+            #gd.grass_manager.update_render(display, 1 / 60, offset=gd.scroll.copy(), rot_function=lambda x, y: int(math.sin(x / 100 + global_time / 40) * 30) / 10)
+            self.tilemap.grass_manager.update_render(self.display, 1/60, offset=self.scroll, rot_function=lambda x, y: int(math.sin(x / 100 + pygame.time.get_ticks() / 300) * 30) / 10)
+
             #self.tilemap.grass_manager.apply_force(self.player.pos, 12, 24)
             #positions = {}
             #for pid, data in self.remote_players.items():

@@ -169,7 +169,11 @@ class Player(PhysicsEntity):
         
         #force_pos = self.rect().center  # (x_pixels, y_pixels)
         #self.game.tilemap.grass_manager.update_render(self.game.display,1/60, offset=self.game.scroll)
-        self.game.tilemap.grass_manager.apply_force(self.pos, 9, 18)
+        # On veut la force au centre des pieds, pas en haut à gauche
+        player_height = self.game.player.size[1]  # même taille que le joueur local
+        force_pos = (self.pos[0] + self.game.player.size[0] / 2, self.pos[1] + player_height)
+        self.game.tilemap.grass_manager.apply_force(force_pos, 4, 8)
+
 
     
     def render(self, surf, offset=(0, 0)):
@@ -220,7 +224,6 @@ class Player(PhysicsEntity):
         return True
 
     def attack(self, direction):
-        print("Attack initiated")
         # On ne peut pas attaquer si on est déjà en train d'attaquer ou de dasher
         if (not self.action.startswith('attack') or self.animation.done) and not self.dashing and not self.wall_slide:
             
@@ -241,8 +244,7 @@ class Player(PhysicsEntity):
             # On déclenche l'animation de l'arme
             self.weapon.weapon_equiped.swing(direction)
 
-            print(f"Action set to {self.action}, weapon swinging {attack_direction}") 
-            # On pourrait jouer un son ici : self.game.sfx['hit'].play()
+
 
 class PurpleCircle:
     """Classe gérant les ennemis ronds violets + collisions avec le joueur."""
@@ -293,7 +295,6 @@ class PurpleCircle:
                 del self.game.net.enemies[eid]
             # Envoie la suppression au serveur
             self.game.net.remove_enemy(eid)
-            print(f"Ennemi {eid} détruit !")
         
 
     def render(self, surf, offset=(0, 0)):
@@ -302,7 +303,7 @@ class PurpleCircle:
             screen_x = x - offset[0]
             screen_y = y - offset[1]
             pygame.draw.circle(surf, (128, 0, 128), (int(screen_x), int(screen_y)), self.radius)
-            self.game.tilemap.grass_manager.apply_force((x, y), 5, 20)
+            #self.game.tilemap.grass_manager.apply_force((x, y), 6, 12)
             
             
             
@@ -346,8 +347,12 @@ class RemotePlayerRenderer:
 
             x, y, action, flip = data
 
-            self.game.tilemap.grass_manager.apply_force((x, y), 9, 18)
-            
+            #self.game.tilemap.grass_manager.apply_force((x, y), 4, 8)
+            # On veut la force au centre des pieds, pas en haut à gauche
+            player_height = self.game.player.size[1]  # même taille que le joueur local
+            force_pos = (x + self.game.player.size[0] / 2, y + player_height)
+            self.game.tilemap.grass_manager.apply_force(force_pos, 4, 8)
+
             if pid not in self.players:
                 self.players[pid] = self.RemotePlayer(self.game, pid, (x,y), action, flip)
 
