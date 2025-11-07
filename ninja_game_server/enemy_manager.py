@@ -1,6 +1,5 @@
 import random
 
-
 class EnemyManager:
     def __init__(self, tilemap, num_enemies=20, speed=0.5):
         self.tilemap = tilemap
@@ -28,7 +27,6 @@ class EnemyManager:
             return
 
         for eid, enemy in self.enemies.items():
-            ex, ey = enemy['x'], enemy['y']
 
             # --- Gravité ---
             #if not self.tilemap.solid_check((ex, ey + 4)):
@@ -37,28 +35,14 @@ class EnemyManager:
              #   enemy['vy'] = 0
 
             # --- Trouver la cible la plus proche ---
-            closest_pid = min(
-                players,
-                key=lambda pid: (players[pid][0] - ex) ** 2 + (players[pid][1] - ey) ** 2
-            )
             enemy['target_player'] = closest_pid
-            px, py, _, _ = players[closest_pid]
 
-            dx, dy = px - ex, py - ey
-            dist = max((dx ** 2 + dy ** 2) ** 0.5, 0.001)
-            step_x = (dx / dist) * self.speed
-            step_y = (dy / dist) * self.speed
 
             # --- Test collisions map ---
-            new_x = ex + step_x
-            new_y = ey + step_y + enemy['vy']
 
-            if not self.tilemap.solid_check((new_x, ey)):
                 enemy['x'] = new_x
             else:
-                enemy['x'] = ex - step_x * 0.5
 
-            if not self.tilemap.solid_check((enemy['x'], new_y)):
                 enemy['y'] = new_y
             else:
                 enemy['vy'] = 0
