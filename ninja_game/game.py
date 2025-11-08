@@ -86,7 +86,7 @@ class Game:
         
         self.screenshake = 0
 
-        self.net = ClientNetwork("127.0.0.1", 5005)
+        self.net = ClientNetwork("127.0.0.1", 5006)
         self.net.connect()
         self.remote_players = {}
         

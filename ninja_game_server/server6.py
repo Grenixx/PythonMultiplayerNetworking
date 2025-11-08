@@ -12,8 +12,6 @@ from enemy_manager import EnemyManager
 #   0 : Mise à jour du joueur (position/action)
 #   3 : Suppression d’un ennemi
 
-
-
 # ==============================
 # --- Player Manager ---
 # ==============================
@@ -59,7 +57,7 @@ class PlayerManager:
 # --- Game Server ---
 # ==============================
 class GameServer:
-    def __init__(self, ip="0.0.0.0", port=5005, rate=1/30):
+    def __init__(self, ip="0.0.0.0", port=5006, rate=1/30):
         self.ip = ip
         self.port = port
         self.rate = rate

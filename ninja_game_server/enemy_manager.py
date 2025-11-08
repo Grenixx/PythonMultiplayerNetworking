@@ -1,28 +1,29 @@
 import random
 from math import *
+import pygame  # facultatif, pour debug visuel
 
 class EnemyManager:
-    def __init__(self, tilemap, num_enemies=20, speed=0.5):
+    def __init__(self, tilemap, num_enemies=1, speed=1.0):
         self.tilemap = tilemap
         self.enemies = {}
         self.next_enemy_id = 1
         self.speed = speed
-        self.create_enemies(num_enemies)
+        self.create_blob(num_enemies)
 
-    def create_enemies(self, num):
+    def create_blob(self, num):
         for _ in range(num):
             eid = self.next_enemy_id
             self.next_enemy_id += 1
             self.enemies[eid] = {
-                'x': random.uniform(50, 250),
-                'y': random.uniform(50, 250),
+                'x': 50,
+                'y': 50,
                 'vx': 0.0,
                 'vy': 0.0,
                 'target_player': None,
             }
         print(f"{num} ennemis créés !")
 
-    def update(self, players):
+    def update(self, players, screen=None):
         """Met à jour tous les ennemis en fonction de la map et des joueurs"""
         if not players:
             return
@@ -30,91 +31,124 @@ class EnemyManager:
         for eid, enemy in self.enemies.items():
             pos = [enemy['x'], enemy['y']]
 
+            # --- Trouver le joueur le plus proche ---
+            closest_pid, closest_dist = None, None
+            for pid, ppos in players.items():
+                dist = distance_squared_to(pos, ppos)
+                if closest_pid is None or dist < closest_dist:
+                    closest_pid, closest_dist = pid, dist
 
-            # --- Gravité ---
-            #if not self.tilemap.solid_check((ex, ey + 4)):
-            #    enemy['vy'] += 0.3  # tombe
-            #else:
-             #   enemy['vy'] = 0
+            if closest_pid is None:
+                continue
 
-            # --- Trouver la cible la plus proche ---
-            closest_dist = None
-            closest_pid = None
-            for pid in players.keys():
-                dist = distance_squared_to(pos, players[pid])
-                if closest_dist == None or closest_dist > dist:
-                    closest_dist,closest_pid = dist,pid
+            player_pos = players[closest_pid]
+            to_player = normalized(vector_to(pos, player_pos))
 
-            enemy['target_player'] = closest_pid
+            # --- Raycasts pour éviter les obstacles ---
+            avoid_vec = [0.0, 0.0]
+            num_rays = 9
+            fov = radians(90)  # champ de vision 90°
+            ray_length = 10
 
-            raycast(self.tilemap, pos, closest_dist, step=4)
+            main_angle = angle(to_player)
 
-            step = [0,0]
-            dist = distane_to(pos, players[closest_pid])
-            if dist > 1:
-                step = normalized(vector_to(pos, players[closest_pid]))
-                step = [i * self.speed for i in step]
+            for i in range(num_rays):
+                # Rayons répartis autour du joueur
+                offset = (i - num_rays // 2) * (fov / num_rays)
+                ray_angle = main_angle + offset
 
-            # --- Test collisions map ---
+                hit_dist = raycast_distance(pos, ray_angle, self.tilemap, ray_length, 4)
+                color = (100, 100, 100)
+
+                if hit_dist is not None:
+                    # plus l’obstacle est proche → plus la poussée est forte
+                    strength = 1 - (hit_dist / ray_length)
+                    push = vec_from_angle(strength, ray_angle + pi)
+                    avoid_vec = add_vecs(avoid_vec, push)
+                    color = (255, 0, 0)
+
+                # --- Dessin visuel du raycast ---
+                if screen:
+                    ray_end = add_vecs(pos, vec_from_angle(ray_length, ray_angle))
+                    pygame.draw.line(screen, color, pos, ray_end, 1)
+
+            # --- Combinaison des forces ---
+            move_dir = add_vecs(to_player, avoid_vec)
+            if norm(move_dir) > 0:
+                move_dir = normalized(move_dir)
+
+            step = [move_dir[0] * self.speed, move_dir[1] * self.speed]
+
+            # --- Test collision simple ---
             new_x = pos[0] + step[0]
             new_y = pos[1] + step[1]
 
             if not self.tilemap.solid_check((new_x, pos[1])):
                 enemy['x'] = new_x
-            else:
-                enemy['vx'] = 0
-
             if not self.tilemap.solid_check((pos[0], new_y)):
                 enemy['y'] = new_y
-            else:
-                enemy['vy'] = 0
 
-            # Limites de la map
-            enemy['x'] = max(0, min(enemy['x'], 1000))
-            enemy['y'] = max(0, min(enemy['y'], 1000))
+# ==========================================================
+# --- Fonctions utilitaires ---
+# ==========================================================
 
-def vector_to(pos1: list,pos2: list):
-    """
-    Renvoie un vecteur de la position 1 vers 2
-    """
-    return [pos2[0] - pos1[0], pos2[1] - pos1[1]]
+def add_vecs(a, b):
+    return [a[0] + b[0], a[1] + b[1]]
 
-def distance_squared_to(pos1: list,pos2: list):
-    return (pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2
+def sub_vecs(a, b):
+    return [a[0] - b[0], a[1] - b[1]]
 
-def distane_to(pos1: list,pos2: list):
-    return sqrt(distance_squared_to(pos1,pos2))
+def vector_to(a, b):
+    return [b[0] - a[0], b[1] - a[1]]
 
-def normalized(vec: list):
-    norm = distane_to([0,0],vec)
-    vec = [i/norm for i in vec]
-    return vec
+def distance_squared_to(a, b):
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    return dx * dx + dy * dy
 
-def is_normalized(vec: list):
-    return vec == normalized(vec)
+def distance_to(a, b):
+    return sqrt(distance_squared_to(a, b))
 
-def raycast(tilemap, start, end, step=4):
-    """
-    Lance un rayon entre deux points (start → end)
-    et renvoie True s'il n'y a pas d'obstacle.
-    """
-    x1, y1 = start
-    x2, y2 = end
+def norm(v):
+    return sqrt(v[0] ** 2 + v[1] ** 2)
 
-    dx = x2 - x1
-    dy = y2 - y1
-    dist = sqrt(dx**2 + dy**2)
+def normalized(v):
+    n = norm(v)
+    if n == 0:
+        return [0, 0]
+    return [v[0] / n, v[1] / n]
 
-    if dist == 0:
-        return True
+def vec_from_angle(length, angle):
+    return [cos(angle) * length, sin(angle) * length]
 
-    # Direction normalisée
-    dx /= dist
-    dy /= dist
+def angle(v):
+    return atan2(v[1], v[0])
 
-    steps = int(dist / step)
-    for i in range(steps):
-        x = x1 + dx * i * step
-        y = y1 + dy * i * step
-        return tilemap.check_type((x, y))
-          
+# ==========================================================
+# --- Raycasting ---
+# ==========================================================
+
+def raycast_collide(pos, angle, tilemap, dist_max=100, step=4, mask=[]):
+    """Renvoie True si le rayon touche un obstacle"""
+    vec = vec_from_angle(step, angle)
+    pos_check = list(pos)
+    dist = 0
+    while dist <= dist_max:
+        check_type = tilemap.check_type((pos_check[0], pos_check[1]))
+        if (mask == [] and check_type is not None) or (check_type in mask):
+            return True
+        pos_check = add_vecs(pos_check, vec)
+        dist += step
+    return False
+
+def raycast_distance(pos, angle, tilemap, dist_max=100, step=4, mask=[]):
+    """Renvoie la distance jusqu’à l’obstacle le plus proche (ou None)"""
+    vec = vec_from_angle(step, angle)
+    pos_check = list(pos)
+    dist = 0
+    while dist <= dist_max:
+        check_type = tilemap.check_type((pos_check[0], pos_check[1]))
+        if (mask == [] and check_type is not None) or (check_type in mask):
+            return dist
+        pos_check = add_vecs(pos_check, vec)
+        dist += step
+    return None
