@@ -1,2 +1,7 @@
 # Byte-compiled / optimized / DLL files
 *.py[codz]
+*$py.class
+/ninja_game/__pycache__
+/ninja_game/scripts/__pycache__
+/ninja_game_server/__pycache__
+*.pyc
