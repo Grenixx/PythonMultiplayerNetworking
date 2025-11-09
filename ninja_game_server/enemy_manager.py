@@ -219,4 +219,5 @@ def raycast_pos(pos: list, angle: float, tilemap, dist_max: float = 1000, dist_c
 create class for raycast and vectors
 add documentation
 add side of block raycast hit in class
+change distance_to to norm()
 """

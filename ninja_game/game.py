@@ -4,6 +4,7 @@ import math
 import random
 
 import pygame
+from screeninfo import get_monitors
 
 from scripts.utils import load_image, load_images, Animation
 from scripts.entities import PhysicsEntity, Player, PurpleCircle, RemotePlayerRenderer
@@ -23,7 +24,12 @@ class Game:
         pygame.init()
 
         pygame.display.set_caption('ninja game')
-        self.screen = pygame.display.set_mode((640*2, 360*2))
+        monitors = get_monitors()
+        for m in monitors:
+            if m.is_primary:
+                monitor = m
+        print(f"Initialising game with width: {monitor.width} and height: {monitor.height}")
+        self.screen = pygame.display.set_mode((monitor.width, monitor.height))
         self.display = pygame.Surface((320, 180), pygame.SRCALPHA)
         self.display_2 = pygame.Surface((320, 180))
 
@@ -101,6 +107,7 @@ class Game:
         self.font = pygame.font.SysFont("consolas", 16)
         self.debug = True
 
+        
     def load_level(self, map_id):
         self.tilemap.load('data/maps/' + str(map_id) + '.json')
         
