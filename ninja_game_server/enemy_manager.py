@@ -210,14 +210,15 @@ def raycast_pos(pos: list, angle: float, tilemap, dist_max: float = 1000, dist_c
     # Ajustements
     if precision >= 10:
         pos_check = round_pos_if_possible(pos_check, dist_check * 2**-(precision - 1))
+        print(f"Après ajustements: {pos_check}")
         if fix_collisions:
             if is_round(pos_check[0]) and angle >= -pi/2 and angle <= pi/2: # collide left side of tile
-                pos_check[0] -= 0.00000000000001
+                pos_check[0] -= 0.0000000000001
             if is_round(pos_check[1]) and angle >= 0 and angle <= pi: # collide up side of tile
-                pos_check[1] -= 0.00000000000001
+                pos_check[1] -= 0.0000000000001
+            print(f"Après fix collisions: {pos_check}")
 
     print()
-    print(f"Après ajustements: {pos_check}")
     return pos_check
 
 """ todo:
