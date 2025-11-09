@@ -150,6 +150,10 @@ class Game:
             flip_byte = 1 if self.player.flip else 0
             self.net.send_state(self.player.pos[0], self.player.pos[1], action_id, flip_byte)
 
+            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0])  # /30 smooth cam
+            self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) # /30 smooth cam
+            render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
+
 
             # mettre à jour les autres joueurs
             #self.remote_players = self.net.players
@@ -159,7 +163,7 @@ class Game:
             shader_surface = self.shader_bg.render()
             self.display_2.blit(shader_surface, (0, 0))
             # scroll = position de la caméra dans ton jeu
-            shader_surface = self.shader_bg.render(camera=(self.scroll[0] * 0.2, self.scroll[1] * -0.2))
+            shader_surface = self.shader_bg.render(camera=(render_scroll[0] * 0.2, render_scroll[1] * -0.2))
             self.display_2.blit(shader_surface, (0, 0))
 
 
@@ -178,9 +182,7 @@ class Game:
                 if self.dead > 40:
                     self.load_level(self.level)
             
-            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 30
-            self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 30
-            render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
+            
             
             for rect in self.leaf_spawners:
                 if random.random() * 49999 < rect.width * rect.height:
@@ -337,7 +339,7 @@ class Game:
             
             #self.tilemap.grass_manager.update_render(self.display,1/60, offset=self.scroll)
             #gd.grass_manager.update_render(display, 1 / 60, offset=gd.scroll.copy(), rot_function=lambda x, y: int(math.sin(x / 100 + global_time / 40) * 30) / 10)
-            self.tilemap.grass_manager.update_render(self.display, 1/10, offset=self.scroll, rot_function=lambda x, y: int(math.sin(x / 100 + pygame.time.get_ticks() / 300) * 30) / 10)
+            self.tilemap.grass_manager.update_render(self.display, 1/10, offset=render_scroll, rot_function=lambda x, y: int(math.sin(x / 100 + pygame.time.get_ticks() / 300) * 30) / 10)
 
             #self.tilemap.grass_manager.apply_force(self.player.pos, 12, 24)
             #positions = {}
@@ -359,7 +361,7 @@ class Game:
             # --- afficher les autres joueurs ---
             self.remote_players_renderer.render(self.display, offset=render_scroll)
             self.display_2.blit(self.display, (0, 0))
-
+            """
             # --- APPLICATION DE L’ÉCLAIRAGE APRÈS TOUT ---
             light_sources = [
                 (self.player.rect().centerx - render_scroll[0],
@@ -367,7 +369,7 @@ class Game:
                 300, (220, 240, 255))
             ]
             self.lighting.render(self.display_2, light_sources, pygame.time.get_ticks())
-
+            """
             # --- AFFICHAGE FINAL ---
             screenshake_offset = (
                 random.random() * self.screenshake - self.screenshake / 2,
