@@ -15,8 +15,8 @@ from scripts.particle import Particle
 from scripts.spark import Spark
 
 from scripts.shader_bg import ShaderBackground
-from client_network import ClientNetwork
-from controller import Controller  
+from scripts.client_network import ClientNetwork
+from scripts.controller import Controller  
 from scripts.lighting import LightingSystem
 
 class Game:
