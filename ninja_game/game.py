@@ -24,12 +24,12 @@ class Game:
         pygame.init()
 
         pygame.display.set_caption('ninja game')
-        monitors = get_monitors()
+        """monitors = get_monitors()
         for m in monitors:
             if m.is_primary:
                 monitor = m
-        print(f"Initialising game with width: {monitor.width} and height: {monitor.height}")
-        self.screen = pygame.display.set_mode((monitor.width, monitor.height))
+        print(f"Initialising game with width: {monitor.width} and height: {monitor.height}")"""
+        self.screen = pygame.display.set_mode((640, 360), pygame.RESIZABLE)
         self.display = pygame.Surface((320, 180), pygame.SRCALPHA)
         self.display_2 = pygame.Surface((320, 180))
 

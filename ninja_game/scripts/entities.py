@@ -79,6 +79,20 @@ class PhysicsEntity:
                   (self.pos[0] - offset[0] + self.anim_offset[0],
                    self.pos[1] - offset[1] + self.anim_offset[1]))
 
+class InterpolatedEntity:
+    def __init__(self, initial_pos, speed=0.15):
+        self.current_pos = list(initial_pos)  # position affichée
+        self.target_pos = list(initial_pos)   # position envoyée par le serveur
+        self.speed = speed                    # vitesse de rattrapage (0.1~0.25)
+
+    def set_target(self, new_pos):
+        self.target_pos = list(new_pos)
+
+    def update(self):
+        # interpolation linéaire
+        self.current_pos[0] += (self.target_pos[0] - self.current_pos[0]) * self.speed
+        self.current_pos[1] += (self.target_pos[1] - self.current_pos[1]) * self.speed
+        return self.current_pos
 
 class Player(PhysicsEntity):
     def __init__(self, game, pos, size):
@@ -244,6 +258,65 @@ class Player(PhysicsEntity):
             # On déclenche l'animation de l'arme
             self.weapon.weapon_equiped.swing(direction)
 
+             
+class RemotePlayerRenderer:
+    """Affiche et anime les autres joueurs avec leur sprite."""
+
+    class RemotePlayer:
+        def __init__(self, game, pid, pos=(0,0), action='idle', flip=False):
+            self.game = game
+            self.pid = pid
+            self.pos = list(pos)
+            self.flip = flip
+            self.set_action(action)
+
+            self.interpolated = InterpolatedEntity(pos)
+
+
+        def set_action(self, action):
+            if hasattr(self, 'action') and self.action == action:
+                return
+            self.action = action
+            base_anim = self.game.assets.get(f'player/{action}', self.game.assets['player/idle'])
+            self.animation = base_anim.copy()
+
+        def update(self, pos, action, flip):
+            self.interpolated.set_target(pos)
+
+            # Interpolation pour la position affichée
+            self.pos = self.interpolated.update()
+
+            self.flip = flip
+            self.set_action(action)
+            self.animation.update()
+
+        def render(self, surf, offset=(0,0)):
+            img = pygame.transform.flip(self.animation.img(), self.flip, False)
+            surf.blit(img, (self.pos[0] - offset[0] - 3, self.pos[1] - offset[1] - 3))
+            
+
+    def __init__(self, game):
+        self.game = game
+        self.players = {}  # pid -> RemotePlayer
+
+    def render(self, surf, offset=(0,0)):
+        for pid, data in self.game.remote_players.items():
+            if pid == self.game.net.id:
+                continue
+
+            x, y, action, flip = data
+
+            #self.game.tilemap.grass_manager.apply_force((x, y), 4, 8)
+            # On veut la force au centre des pieds, pas en haut à gauche
+            player_height = self.game.player.size[1]  # même taille que le joueur local
+            force_pos = (x + self.game.player.size[0] / 2, y + player_height)
+            self.game.tilemap.grass_manager.apply_force(force_pos, 4, 8)
+
+            if pid not in self.players:
+                self.players[pid] = self.RemotePlayer(self.game, pid, (x,y), action, flip)
+
+            self.players[pid].update((x,y), action, flip)
+            self.players[pid].render(surf, offset)
 
 
 class PurpleCircle:
@@ -304,61 +377,4 @@ class PurpleCircle:
             screen_y = y - offset[1]
             pygame.draw.circle(surf, (128, 0, 128), (int(screen_x), int(screen_y)), self.radius)
             self.game.tilemap.grass_manager.apply_force((x, y), 6, 12)
-            
-            
-            
-class RemotePlayerRenderer:
-    """Affiche et anime les autres joueurs avec leur sprite."""
-
-    class RemotePlayer:
-        def __init__(self, game, pid, pos=(0,0), action='idle', flip=False):
-            self.game = game
-            self.pid = pid
-            self.pos = list(pos)
-            self.flip = flip
-            self.set_action(action)
-
-        def set_action(self, action):
-            if hasattr(self, 'action') and self.action == action:
-                return
-            self.action = action
-            base_anim = self.game.assets.get(f'player/{action}', self.game.assets['player/idle'])
-            self.animation = base_anim.copy()
-
-        def update(self, pos, action, flip):
-            self.pos = list(pos)
-            self.flip = flip
-            self.set_action(action)
-            self.animation.update()
-
-        def render(self, surf, offset=(0,0)):
-            img = pygame.transform.flip(self.animation.img(), self.flip, False)
-            surf.blit(img, (self.pos[0] - offset[0] - 3, self.pos[1] - offset[1] - 3))
-            
-
-    def __init__(self, game):
-        self.game = game
-        self.players = {}  # pid -> RemotePlayer
-
-    def render(self, surf, offset=(0,0)):
-        for pid, data in self.game.remote_players.items():
-            if pid == self.game.net.id:
-                continue
-
-            x, y, action, flip = data
-
-            #self.game.tilemap.grass_manager.apply_force((x, y), 4, 8)
-            # On veut la force au centre des pieds, pas en haut à gauche
-            player_height = self.game.player.size[1]  # même taille que le joueur local
-            force_pos = (x + self.game.player.size[0] / 2, y + player_height)
-            self.game.tilemap.grass_manager.apply_force(force_pos, 4, 8)
-
-            if pid not in self.players:
-                self.players[pid] = self.RemotePlayer(self.game, pid, (x,y), action, flip)
-
-            self.players[pid].update((x,y), action, flip)
-            self.players[pid].render(surf, offset)
-
-
-
             
