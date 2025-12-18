@@ -6,8 +6,6 @@ import miniupnpc
 from TilemapServer import TilemapServer
 from enemy_manager import EnemyManager
 
-
-
 # Message types:
 #  10 : Connexion
 #   1 : Déconnexion
@@ -22,7 +20,6 @@ class PlayerManager:
         self.clients = {}   # addr -> id
         self.players = {}   # id -> (x, y, action:str, flip:bool)
         self.next_id = 1
-        
 
     def add_player(self, addr):
         pid = self.next_id
@@ -60,14 +57,12 @@ class PlayerManager:
 # --- Game Server ---
 # ==============================
 class GameServer:
-    def __init__(self,  local : bool = False, ip="0.0.0.0", port=5006, rate=1/30):
+    def __init__(self, ip="0.0.0.0", port=5006, rate=1/30):
         self.ip = ip
         self.port = port
         self.rate = rate
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((ip, port))
-
-
 
         # --- Charger la map ---
         self.map = TilemapServer()
@@ -76,12 +71,11 @@ class GameServer:
 
         # --- Managers ---
         self.players = PlayerManager()
-        self.enemy_manager = EnemyManager(self.map)
+        self.enemies = EnemyManager(self.map)
         self.last_update = time.time()
 
         print(f"Serveur en ligne sur {ip}:{port}")
-        if not local:
-            self.init_upnp()
+        #self.init_upnp()
 
     def init_upnp(self):
         upnp = miniupnpc.UPnP()
@@ -142,9 +136,9 @@ class GameServer:
             pid = self.players.remove_player(addr)
             print(f"Déconnexion du joueur {pid}")
             # Supprime la cible si l’ennemi le suivait
-            for e in self.enemy_manager.enemies.values():
-                if e.properties['target_player'] == pid:
-                    e.properties['target_player'] = None
+            for e in self.enemies.enemies.values():
+                if e['target_player'] == pid:
+                    e['target_player'] = None
             return
 
         # --- Mise à jour joueur ---
@@ -154,15 +148,15 @@ class GameServer:
         # --- Suppression ennemi ---
         if msg_type == 3 and len(data) >= 5:
             eid = struct.unpack("I", data[1:5])[0]
-            if eid in self.enemy_manager.enemies:
-                del self.enemy_manager.enemies[eid]
+            if eid in self.enemies.enemies:
+                del self.enemies.enemies[eid]
             return
 
     # ---------------------------
     # --- Mises à jour ---
     # ---------------------------
     def update_world(self):
-        self.enemy_manager.update(self.players.players)
+        self.enemies.update(self.players.players)
         self.broadcast_state()
 
     # ---------------------------
@@ -176,9 +170,9 @@ class GameServer:
             flip_byte = b'\x01' if flip else b'\x00'
             payload += struct.pack("Iff", pid, x, y) + action_bytes + flip_byte
 
-        payload += struct.pack("B", len(self.enemy_manager.enemies))
-        for eid, e in self.enemy_manager.enemies.items():
-            payload += struct.pack("Iff", eid, e.properties['x'], e.properties['y'])
+        payload += struct.pack("B", len(self.enemies.enemies))
+        for eid, e in self.enemies.enemies.items():
+            payload += struct.pack("Iff", eid, e['x'], e['y'])
 
         for addr in self.players.clients:
             self.sock.sendto(payload, addr)
@@ -188,5 +182,5 @@ class GameServer:
 # --- Lancement ---
 # ==============================
 if __name__ == "__main__":
-    server = GameServer(True) #mode local == true
+    server = GameServer()
     server.run()
