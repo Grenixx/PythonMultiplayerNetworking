@@ -40,6 +40,35 @@ class WeaponBase:
             )
 
 
+# --- Classe Weapon gérant l’arme équipée ---
+class Weapon:
+    """Gestionnaire d’arme : choisit l’arme active (lance, masse, etc.)"""
+    def __init__(self, owner, weapon_type='lance'):
+        self.owner = owner
+        self.weapon_type = weapon_type
+        self.set_weapon(weapon_type)
+
+    def set_weapon(self, weapon_type):
+        """Change le type d’arme actuellement équipée."""
+        if weapon_type == 'lance':
+            self.weapon_equiped = Lance(self.owner)
+        elif weapon_type == 'mace':
+            self.weapon_equiped = Mace(self.owner)
+        elif weapon_type == 'sword':
+            self.weapon_equiped = Sword(self.owner)
+        self.weapon_type = weapon_type
+        print(f"[DEBUG] Arme équipée : {self.weapon_type}")
+
+    def update(self):
+        self.weapon_equiped.update()
+
+    def render(self, surf, offset=(0, 0)):
+        self.weapon_equiped.render(surf, offset)
+
+    def swing(self, direction):
+        self.weapon_equiped.swing(direction)
+
+
 # --- Classe Lance héritant de WeaponBase ---
 class Lance(WeaponBase):
     def __init__(self, owner):
@@ -153,50 +182,21 @@ class Mace(WeaponBase):
         self.animation.frame = 0
 
 
-# --- Classe Weapon gérant l’arme équipée ---
-class Weapon:
-    """Gestionnaire d’arme : choisit l’arme active (lance, masse, etc.)"""
-    def __init__(self, owner, weapon_type='lance'):
-        self.owner = owner
-        self.weapon_type = weapon_type
-        self.set_weapon(weapon_type)
-
-    def set_weapon(self, weapon_type):
-        """Change le type d’arme actuellement équipée."""
-        if weapon_type == 'lance':
-            self.weapon_equiped = Lance(self.owner)
-        elif weapon_type == 'mace':
-            self.weapon_equiped = Mace(self.owner)
-        elif weapon_type == 'sword':
-            self.weapon_equiped = Sword(self.owner)
-        self.weapon_type = weapon_type
-        print(f"[DEBUG] Arme équipée : {self.weapon_type}")
-
-    def update(self):
-        self.weapon_equiped.update()
-
-    def render(self, surf, offset=(0, 0)):
-        self.weapon_equiped.render(surf, offset)
-
-    def swing(self, direction):
-        self.weapon_equiped.swing(direction)
-
-
-       
-# --- Classe Sword avec slash hérité de WeaponBase ---
+# --- Classe Sword avec slash rotatif et flip uniquement horizontal ---
 class Sword(WeaponBase):
     def __init__(self, owner):
         super().__init__(owner)
-        self.image = owner.game.assets['sword']  # même image pour l'instant
-        self.attack_duration = 20  # plus long pour le slash
-        self.start_angle = -60     # angle de départ du slash
-        self.end_angle = 60        # angle final du slash
-        self.current_angle = self.start_angle
+        self.image = owner.game.assets['lance']  # image temporaire
+        self.attack_duration = 15
+        self.start_angle = 0
+        self.end_angle = 0
+        self.current_angle = 0
+        self.max_thrust = 16
+        self.retract_distance = 4
 
     def update(self):
         super().update()
         if self.attack_timer > 0:
-            # Calcule l'angle du slash en fonction du progrès
             progress = (self.attack_duration - self.attack_timer) / self.attack_duration
             self.current_angle = self.start_angle + (self.end_angle - self.start_angle) * progress
 
@@ -204,12 +204,21 @@ class Sword(WeaponBase):
         center_x = self.owner.rect().centerx - offset[0]
         center_y = self.owner.rect().centery - offset[1]
 
-        # On peut légèrement avancer l'épée pour que ça "traverse" le joueur
-        thrust = 10
+        thrust = self.max_thrust
         rotated_image = pygame.transform.rotate(self.image, self.current_angle)
 
-        pos_x = center_x - rotated_image.get_width() // 2
-        pos_y = center_y - rotated_image.get_height() // 2 - thrust
+        if self.attack_direction == 'up':
+            pos_x = center_x - rotated_image.get_width() // 2
+            pos_y = center_y - rotated_image.get_height() - thrust
+        elif self.attack_direction == 'down':
+            pos_x = center_x - rotated_image.get_width() // 2
+            pos_y = center_y + thrust
+        else:  # horizontal
+            pos_y = center_y - rotated_image.get_height() // 2
+            if self.owner.flip:  # gauche
+                pos_x = center_x - rotated_image.get_width() - thrust + 15
+            else:  # droite
+                pos_x = center_x + thrust - 15
 
         return (pos_x, pos_y)
 
@@ -226,7 +235,30 @@ class Sword(WeaponBase):
             self.render_debug_hitbox(surf, self.rect(), offset)
 
     def swing(self, direction):
-        """Déclenche un slash. Pour Sword, direction n'affecte pas le mouvement."""
+        """Slash rotatif, flip seulement pour horizontal."""
         super().swing(direction)
+        self.attack_direction = direction
+
+        # Flip uniquement si horizontal
+        if direction == 'left':
+            self.owner.flip = True
+        elif direction == 'right':
+            self.owner.flip = False
+        # Pour 'up' et 'down', on ne touche pas à flip
+
+        # Définir l’arc de rotation selon la direction
+        if direction == 'up':
+            self.start_angle = -90
+            self.end_angle = 0
+        elif direction == 'down':
+            self.start_angle = 90
+            self.end_angle = 0
+        elif direction == 'left':
+            self.start_angle = 180
+            self.end_angle = 120
+        else:  # right
+            self.start_angle = 0
+            self.end_angle = -60
+
         self.current_angle = self.start_angle
-        print(f"[DEBUG] Sword swing déclenché, angle={self.current_angle}")
+        print(f"[DEBUG] Sword swing {direction}, start_angle={self.start_angle}, end_angle={self.end_angle}, flip={self.owner.flip}")
