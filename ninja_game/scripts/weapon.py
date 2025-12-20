@@ -167,8 +167,8 @@ class Weapon:
             self.weapon_equiped = Lance(self.owner)
         elif weapon_type == 'mace':
             self.weapon_equiped = Mace(self.owner)
-        else:
-            self.weapon_equiped = Lance(self.owner)
+        elif weapon_type == 'sword':
+            self.weapon_equiped = Sword(self.owner)
         self.weapon_type = weapon_type
         print(f"[DEBUG] Arme équipée : {self.weapon_type}")
 
@@ -180,3 +180,53 @@ class Weapon:
 
     def swing(self, direction):
         self.weapon_equiped.swing(direction)
+
+
+       
+# --- Classe Sword avec slash hérité de WeaponBase ---
+class Sword(WeaponBase):
+    def __init__(self, owner):
+        super().__init__(owner)
+        self.image = owner.game.assets['sword']  # même image pour l'instant
+        self.attack_duration = 20  # plus long pour le slash
+        self.start_angle = -60     # angle de départ du slash
+        self.end_angle = 60        # angle final du slash
+        self.current_angle = self.start_angle
+
+    def update(self):
+        super().update()
+        if self.attack_timer > 0:
+            # Calcule l'angle du slash en fonction du progrès
+            progress = (self.attack_duration - self.attack_timer) / self.attack_duration
+            self.current_angle = self.start_angle + (self.end_angle - self.start_angle) * progress
+
+    def get_render_pos(self, offset):
+        center_x = self.owner.rect().centerx - offset[0]
+        center_y = self.owner.rect().centery - offset[1]
+
+        # On peut légèrement avancer l'épée pour que ça "traverse" le joueur
+        thrust = 10
+        rotated_image = pygame.transform.rotate(self.image, self.current_angle)
+
+        pos_x = center_x - rotated_image.get_width() // 2
+        pos_y = center_y - rotated_image.get_height() // 2 - thrust
+
+        return (pos_x, pos_y)
+
+    def rect(self):
+        pos = self.get_render_pos((0, 0))
+        rotated_image = pygame.transform.rotate(self.image, self.current_angle)
+        return rotated_image.get_rect(topleft=pos)
+
+    def render(self, surf, offset=(0, 0)):
+        if self.attack_timer > 0:
+            pos = self.get_render_pos(offset)
+            rotated_image = pygame.transform.rotate(self.image, self.current_angle)
+            surf.blit(rotated_image, pos)
+            self.render_debug_hitbox(surf, self.rect(), offset)
+
+    def swing(self, direction):
+        """Déclenche un slash. Pour Sword, direction n'affecte pas le mouvement."""
+        super().swing(direction)
+        self.current_angle = self.start_angle
+        print(f"[DEBUG] Sword swing déclenché, angle={self.current_angle}")
