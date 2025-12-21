@@ -15,7 +15,7 @@ class EnemyManager:
     def create_enemy(self, pos: list, type: str):
         enemy_types = {"blob": Blob}
         self.enemies[self.next_enemy_id] = enemy_types[type](self.next_enemy_id, pos)
-        self.next_enemy_id += 1;
+        self.next_enemy_id += 1
 
     def update(self, players):
         """Met à jour tous les ennemis en fonction de la map et des joueurs"""

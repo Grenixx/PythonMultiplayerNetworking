@@ -4,7 +4,7 @@ import time
 import miniupnpc
 
 from TilemapServer import TilemapServer
-from enemy_manager import EnemyManager
+from enemy_manager import Blob, EnemyManager
 
 
 
