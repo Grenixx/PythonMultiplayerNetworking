@@ -58,7 +58,7 @@ class Blob(Enemy):
         velocity = [self.properties['vx'], self.properties['vy']]
 
         # --- Gravité ---
-        if not self.tilemap.solid_check((pos[0], pos[1] + 4)):
+        if not self.enemy_manager.tilemap.solid_check((pos[0], pos[1] + 4)):
             velocity[1] += 0  # tombe
         else:
             velocity[1] = 0
@@ -83,12 +83,12 @@ class Blob(Enemy):
             new_x = pos[0] + step[0]
             new_y = pos[1] + step[1] + velocity[1]
 
-            if not self.tilemap.solid_check((new_x, pos[1])):
+            if not self.enemy_manager.tilemap.solid_check((new_x, pos[1])):
                 velocity[0] = step[0]
             else:
                 velocity[0] = 0
 
-            if not self.tilemap.solid_check((pos[0], new_y)):
+            if not self.enemy_manager.tilemap.solid_check((pos[0], new_y)):
                 velocity[1] += step[1]
             else:
                 velocity[1] = 0

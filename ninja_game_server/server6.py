@@ -178,7 +178,7 @@ class GameServer:
 
         payload += struct.pack("B", len(self.enemies.enemies))
         for eid, e in self.enemies.enemies.items():
-            payload += struct.pack("Iff", eid, e['x'], e['y'])
+            payload += struct.pack("Iff", eid, e.properties['x'], e.properties['y'])
 
         for addr in self.players.clients:
             self.sock.sendto(payload, addr)
