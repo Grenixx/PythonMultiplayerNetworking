@@ -8,7 +8,7 @@ from screeninfo import get_monitors
 
 from scripts.utils import load_image, load_images, Animation
 from scripts.entities import PhysicsEntity, Player, PurpleCircle, RemotePlayerRenderer
-from scripts.weapon import WeaponBase
+from scripts.weapon import Weapon
 from scripts.tilemap import Tilemap
 from scripts.clouds import Clouds
 from scripts.particle import Particle
@@ -280,37 +280,33 @@ class Game:
                     self.net.disconnect()
                     pygame.quit()
                     sys.exit()
-
                 # Si une touche est pressée
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        event.type = pygame.QUIT
                     if event.key == pygame.K_F1:
                         self.player.weapon.weapon_equiped.toggle_debug()
                         self.debug = not self.debug
                     # Mouvement horizontal
-                    if not self.player.action.startswith('attack'):  # or self.player.weapon.weapon_equiped.attack_timer < 8: trouver un moyen "d'aider" le joueur à tourner meme s'il presse trop tot
-                        if event.key == pygame.K_LEFT or event.key == pygame.K_q:
-                            self.movement[0] = True
-                            self.player.is_pressed = 'left'
-                        if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                            self.movement[1] = True
-                            self.player.is_pressed = 'right'
-                        if event.key == pygame.K_UP or event.key == pygame.K_z:
-                            self.player.is_pressed = 'up'
-                        # On vérifie d'abord la touche, PUIS on tente de sauter.
-                        if event.key == pygame.K_SPACE:
-                            if self.player.request_jump():
-                                self.sfx['jump'].play()
-                        if event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                            # On stocke l'information que la touche bas est pressée
-                            self.player.is_pressed = 'down'
-                        if event.key == pygame.K_x or event.key == pygame.K_LSHIFT:
-                            self.player.dash()
-                        if event.key == pygame.K_c:
-                            self.currentWeaponIndex = (self.currentWeaponIndex % len(self.weaponDictionary)) + 1
-                            self.weapon_type = self.weaponDictionary[self.currentWeaponIndex]
-                            self.player.weapon.set_weapon(self.weapon_type)
+                    if event.key == pygame.K_LEFT or event.key == pygame.K_q:
+                        self.movement[0] = True
+                        self.player.is_pressed = 'left'
+                    if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                        self.movement[1] = True
+                        self.player.is_pressed = 'right'
+                    if event.key == pygame.K_UP or event.key == pygame.K_z:
+                        self.player.is_pressed = 'up'
+                    # On vérifie d'abord la touche, PUIS on tente de sauter.
+                    if event.key == pygame.K_SPACE:
+                        if self.player.request_jump():
+                            self.sfx['jump'].play()
+                    if event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                        # On stocke l'information que la touche bas est pressée
+                        self.player.is_pressed = 'down'
+                    if event.key == pygame.K_x or event.key == pygame.K_LSHIFT:
+                        self.player.dash()
+                    if event.key == pygame.K_c:
+                        self.currentWeaponIndex = (self.currentWeaponIndex % len(self.weaponDictionary)) + 1
+                        self.weapon_type = self.weaponDictionary[self.currentWeaponIndex]
+                        self.player.weapon.set_weapon(self.weapon_type)
                 # Si une touche est relâchée
                 if event.type == pygame.KEYUP or event.type == pygame.K_SPACE:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_q:
