@@ -14,7 +14,7 @@ class Weapon:
 
     def set_weapon(self, weapon_type):
         # Ici toutes les armes type “masse” utilisent WeaponBase
-        if weapon_type in ['mace', 'mace1', 'club']:
+        if weapon_type in ['mace', 'mace1', 'slashTriangle']:
             self.weapon_equiped = WeaponBase(self.owner, weapon_type)
         else:
             # fallback si arme inconnue
@@ -62,7 +62,7 @@ class WeaponBase:
             raise ValueError(f"Aucun asset trouvé pour {weapon_type}")
         # Scale pour s'adapter au jeu
         scaled_images = [
-            pygame.transform.scale(img, (img.get_width() // 6, img.get_height() // 6))
+            pygame.transform.scale(img, (img.get_width() //4, img.get_height()//4))
             for img in anim_asset.images
         ]
         return anim_asset.__class__(scaled_images, anim_asset.img_duration, anim_asset.loop)

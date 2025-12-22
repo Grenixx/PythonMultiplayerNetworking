@@ -73,9 +73,9 @@ class Game:
             'particle/particle': Animation(load_images(resource_path('data/images/particles/particle')), img_dur=6, loop=False),
             'gun': load_image(resource_path('data/images/gun.png')),
             'projectile': load_image(resource_path('data/images/projectile.png')),
-            'mace': Animation(load_images(resource_path('data/images/entities/weapon/mace')), img_dur=5, loop=False),
-            'mace1': Animation(load_images(resource_path('data/images/entities/weapon/mace1')), img_dur=5, loop=False),
-
+            'mace': Animation(load_images(resource_path('data/images/entities/weapon/mace'), True), img_dur=5, loop=False),
+            'mace1': Animation(load_images(resource_path('data/images/entities/weapon/mace1'), True), img_dur=5, loop=False),
+            'slashTriangle': Animation(load_images(resource_path('data/images/entities/weapon/slashTriangle'), True), img_dur=1.5, loop=False),
         }
 
         self.sfx = {
@@ -119,7 +119,7 @@ class Game:
         self.lighting = LightingSystem(self.display.get_size())
 
         self.weapon_type = 'mace' # On commence avec la lance
-        self.weaponDictionary = {1: 'mace', 2: 'mace1', 3: 'sword'}
+        self.weaponDictionary = {1: 'mace', 2: 'mace1', 3: 'slashTriangle'}
         self.currentWeaponIndex = 1
 
         self.font = pygame.font.SysFont("consolas", 16)
@@ -168,8 +168,8 @@ class Game:
             flip_byte = 1 if self.player.flip else 0
             self.net.send_state(self.player.pos[0], self.player.pos[1], action_id, flip_byte)
 
-            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0])  # /30 smooth cam
-            self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) # /30 smooth cam
+            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0])  #/5 # smooth cam
+            self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) #/5 # smooth cam
             render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
 
             # mettre à jour les autres joueurs
