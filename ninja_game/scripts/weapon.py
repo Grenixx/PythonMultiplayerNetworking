@@ -90,6 +90,10 @@ class WeaponBase:
         if direction is None or direction == "front":
             direction = "left" if self.owner.flip else "right"
 
+        #print()
+        if direction == "down" and not self.owner.air_time > 5:
+            direction = "left" if self.owner.flip else "right"
+
         self.attack_direction = direction
         self.attack_timer = len(self.animation.images) * self.animation.img_duration
         self.animation.frame = 0

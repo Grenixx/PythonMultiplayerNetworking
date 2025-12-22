@@ -102,7 +102,10 @@ class Player(PhysicsEntity):
     
     def update(self, tilemap, movement=(0, 0)):
         super().update(tilemap, movement=movement) 
-        self.air_time += 1
+        if self.collisions['down']:
+            self.air_time = 0
+        else:
+            self.air_time += 1
         
         self.weapon.weapon_equiped.update()
         self.jump_buffer_timer = max(0, self.jump_buffer_timer - 1)
@@ -122,7 +125,7 @@ class Player(PhysicsEntity):
             # Si le buffer de saut est actif au moment où on atterrit, on saute.
             if self.jump_buffer_timer > 0:
                 self.jump()
-            
+             
         self.wall_slide = False
         if (self.collisions['right'] or self.collisions['left']) and self.air_time > 4 and not self.collisions['down']:
             self.wall_slide = True
