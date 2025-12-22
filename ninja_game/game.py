@@ -282,6 +282,8 @@ class Game:
                     sys.exit()
                 # Si une touche est pressée
                 if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        event.type = pygame.QUIT
                     if event.key == pygame.K_F1:
                         self.player.weapon.weapon_equiped.toggle_debug()
                         self.debug = not self.debug
