@@ -149,14 +149,13 @@ def rebinding(action):
     global wait_key, action_changing
     wait_key = True
     action_changing = action
+    print(CONTROLS)
     
-    
-
 
 
 main_menu = Menu("Main Menu", [("START GAME", start_game),("OPTIONS", open_options),("QUIT GAME", quit_game),], font)
 options_menu = Menu("Options", [("Audio",None),("Keyboards",lambda: set_active_menu(keyboard_menu)),("Graphics",lambda: set_active_menu(graphics_menu)),("Back", lambda: set_active_menu(main_menu)),], font)
-keyboard_menu = Menu("Keyboard", [("Jump",None),("Attack",None),("Dodge",None),("left",None),("Right",None),("Back", lambda: set_active_menu(options_menu))],font)
+keyboard_menu = Menu("Keyboard", [(f"Jump : {CONTROLS['JUMP']}",lambda: rebinding("JUMP")),("Attack",lambda: rebinding("ATTACK")),("Dodge",lambda: rebinding("DODGE")),("left",lambda: rebinding("LEFT")),("Right",lambda: rebinding("RIGHT")),("Back", lambda: set_active_menu(options_menu))],font)
 graphics_menu = Menu("Graphics",[("1920-1080",lambda: resize(1920, 1080)),("1680-1050",lambda: resize(1680, 1050)),("1280-720",lambda: resize(1280,720)),("1024-768",lambda: resize(1024,768)),("800-600",lambda: resize(800,600)),("Back", lambda: set_active_menu(options_menu))],font)
 
 
