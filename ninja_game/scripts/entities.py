@@ -22,6 +22,9 @@ class PhysicsEntity:
         self.set_action('idle')
         
         self.last_movement = [0, 0]
+
+        self.gravity = 600  # pixels/seconde²
+        self.max_fall_speed = 300  # pixels/seconde
     
     def rect(self):
         return pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
@@ -74,8 +77,9 @@ class PhysicsEntity:
             
         self.last_movement = movement
         
-        self.velocity[1] = min(5, self.velocity[1] + 0.1)
-        
+        #self.velocity[1] = min(5, self.velocity[1] + 0.1)
+        self.velocity[1] = min(self.max_fall_speed, self.velocity[1] + self.gravity * dt)
+
         if self.collisions['down'] or self.collisions['up']:
             self.velocity[1] = 0
             
@@ -105,23 +109,34 @@ class Player(PhysicsEntity):
         # On crée une instance de l'arme et on la lie au joueur
         self.weapon = Weapon(self)
 
+        self.jump_force = -250  # pixels/seconde (négatif = vers le haut)
+        self.wall_jump_force_x = 210  # pixels/seconde
+        self.wall_jump_force_y = -150  # pixels/seconde
+        
+        # Constantes pour la détection (en secondes, pas en frames)
+        self.coyote_time = 0.15  # secondes au lieu de 9 frames
+        self.jump_buffer_time = 0.2  # secondes au lieu de 12 frames
+        self.wall_slide_speed = 30  # pixels/seconde maximum en glissade
+
     def update(self, tilemap, movement=(0, 0), dt=0):
         super().update(tilemap, movement=movement, dt=dt) 
+
         if self.collisions['down']:
             self.air_time = 0
         else:
-            self.air_time += 1
+            self.air_time += dt  # dt est en secondes
+
         
         self.weapon.weapon_equiped.update()
-        self.jump_buffer_timer = max(0, self.jump_buffer_timer - 1)
+        self.jump_buffer_timer = max(0, self.jump_buffer_timer - dt)
 
-        if self.air_time > 120:
+        if self.air_time > 5:
             if not self.game.dead:
                 self.game.screenshake = max(16, self.game.screenshake)
             self.game.dead += 1
         
         if self.wall_slide:
-            self.air_time = 5
+            self.air_time = 0.08
         if self.collisions['down'] :
             self.air_time = 0
             # On redonne 2 sauts au joueur quand il touche le sol.
@@ -132,9 +147,9 @@ class Player(PhysicsEntity):
                 self.jump()
              
         self.wall_slide = False
-        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 4 and not self.collisions['down']:
+        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 0.067 and not self.collisions['down']:
             self.wall_slide = True
-            self.velocity[1] = min(self.velocity[1], 0.5)
+            self.velocity[1] = min(self.velocity[1], self.wall_slide_speed)
             if self.collisions['right']:
                 self.flip = False
             else:
@@ -142,7 +157,7 @@ class Player(PhysicsEntity):
             self.set_action('wall_slide')
         
         if not self.wall_slide and not self.action.startswith('attack'):
-            if self.air_time > 4:
+            if self.air_time > 0.067:
                 self.set_action('jump')
             elif movement[0] != 0:
                 self.set_action('run')
@@ -199,23 +214,23 @@ class Player(PhysicsEntity):
     def jump(self):
         if self.wall_slide:
             if self.flip and self.last_movement[0] < 0:
-                self.velocity[0] = 3.5
-                self.velocity[1] = -2.5
-                self.air_time = 5
+                self.velocity[0] = self.wall_jump_force_x
+                self.velocity[1] = self.wall_jump_force_y
+                self.air_time = 0.08
                 self.jumps = False
                 return True
             elif not self.flip and self.last_movement[0] > 0:
-                self.velocity[0] = -3.5
-                self.velocity[1] = -2.5
-                self.air_time = 5
+                self.velocity[0] = self.wall_jump_force_x * -1
+                self.velocity[1] = self.wall_jump_force_y
+                self.air_time = 0.08
                 self.jumps = False
                 return True
                 
         # Saut normal ou "Coyote Time" : si on a un saut et qu'on est en l'air depuis peu de temps
-        elif self.jumps and self.air_time < 9: # 9 frames = ~0.15s
-            self.velocity[1] = -3
+        elif self.jumps and self.air_time < self.coyote_time: # 9 frames = ~0.15s
+            self.velocity[1] = self.jump_force
             self.jumps = False
-            self.air_time = 5
+            self.air_time = 0.08
             self.jump_buffer_timer = 0 # On a sauté, on annule le buffer
             return True
     
@@ -233,7 +248,7 @@ class Player(PhysicsEntity):
         # Si on ne peut pas sauter immédiatement (car en l'air), on active le buffer.
         # 12 frames = 0.2s. C'est la fenêtre pendant laquelle le jeu se souviendra de l'appui.
         if not self.jump():
-            self.jump_buffer_timer = 12
+            self.jump_buffer_timer = self.jump_buffer_time
             return False
         return True
 
