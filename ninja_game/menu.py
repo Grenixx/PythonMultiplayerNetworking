@@ -109,7 +109,7 @@ class Menu:
 
 def start_game():
     in_game = True
-    game = Game()
+    game = Game(max_fps=60)
     game.run()
     while in_game:
         for ev in pygame.event.get():
