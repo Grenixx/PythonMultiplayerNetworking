@@ -1,3 +1,5 @@
+import os
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 import sys
 import pygame
 from game import Game
@@ -23,6 +25,8 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Menu")
 clock = pygame.time.Clock()
 font = pygame.font.Font(FONT_NAME, FONT_SIZE)
+BACKGROUND = pygame.image.load("C:\\Users\\tiboh\\Documents\\GitHub\\PythonMultiplayerNetworking\\ninja_game\\backgroundtemp.png").convert()
+BACKGROUND_DIM = pygame.transform.smoothscale(BACKGROUND, (WIDTH, HEIGHT))
 
 def render_text(text, font, color):
     return font.render(text, True, color)
@@ -66,10 +70,15 @@ class Menu:
         self.title = title
         self.font = font
         self.items = []
+        self.items_data = items
         self.spacing = spacing
         self.selected = 0
         self.visible = True
         self._build_buttons(items)
+
+    def rebuild(self):
+        self.items.clear()
+        self._build_buttons(self.items_data)
 
     def _build_buttons(self, items):
         button_w = 300
@@ -143,10 +152,12 @@ def quit_game():
   
 
 def resize(new_width, new_height):
-    global WIDTH,HEIGHT, screen
+    global WIDTH,HEIGHT, screen, BACKGROUND_DIM
     WIDTH,HEIGHT = new_width,new_height
     screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-    last_menu.draw(screen)
+    BACKGROUND_DIM = pygame.transform.smoothscale(BACKGROUND, (WIDTH, HEIGHT))
+    for menu in lst_menu:
+        menu.rebuild()
     
 
 def rebinding(action):
@@ -161,7 +172,7 @@ main_menu = Menu("Main Menu", [("START GAME", start_game),("OPTIONS", open_optio
 options_menu = Menu("Options", [("Audio",None),("Keyboards",lambda: set_active_menu(keyboard_menu)),("Graphics",lambda: set_active_menu(graphics_menu)),("Back", lambda: set_active_menu(main_menu)),], font)
 keyboard_menu = Menu("Keyboard", [(f"Jump : {CONTROLS['JUMP']}",lambda: rebinding("JUMP")),(f"Change Arm : {CONTROLS['CHANGE ARM']}",lambda: rebinding("ATTACK")),(f"Dash : {CONTROLS['DASH']}",lambda: rebinding("DODGE")),(f"left : {CONTROLS['LEFT']}",lambda: rebinding("LEFT")),(f"Right : {CONTROLS['RIGHT']}",lambda: rebinding("RIGHT")),("Back", lambda: set_active_menu(options_menu))],font)
 graphics_menu = Menu("Graphics",[("1920-1080",lambda: resize(1920, 1080)),("1680-1050",lambda: resize(1680, 1050)),("1280-720",lambda: resize(1280,720)),("1024-768",lambda: resize(1024,768)),("800-600",lambda: resize(800,600)),("Back", lambda: set_active_menu(options_menu))],font)
-
+lst_menu = [main_menu,options_menu,keyboard_menu,graphics_menu]
 
 
 def set_active_menu(menu):
@@ -191,7 +202,7 @@ def main():
                 continue
             if active_menu:
                 active_menu.handle_event(event)
-        screen.fill(BG_COLOR)
+        screen.blit(BACKGROUND_DIM, (0, 0))
         if active_menu:
             active_menu.draw(screen)
         pygame.display.flip()
