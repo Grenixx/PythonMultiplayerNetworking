@@ -6,7 +6,7 @@ import random
 # ===============   GESTIONNAIRE D'ARME    =================
 # ============================================================
 class Weapon:
-    def __init__(self, owner, weapon_type='mace'):
+    def __init__(self, owner, weapon_type='slashTriangle'):
         self.owner = owner
         self.weapon_type = weapon_type
         self.weapon_equiped = None  # Toujours initialisé
@@ -39,7 +39,7 @@ class Weapon:
 class WeaponBase:
     debug = True  # Debug global
 
-    def __init__(self, owner, weapon_type='mace'):
+    def __init__(self, owner, weapon_type='slashTriangle'):
         self.owner = owner
         self.weapon_type = weapon_type
         self.attack_timer = 0

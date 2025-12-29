@@ -302,7 +302,7 @@ class PurpleCircle:
         self.game = game
         self.radius = 8  # rayon du cercle pour les collisions
 
-        base_anim = self.game.assets.get(f'yokai1/idle', self.game.assets['player/idle'])
+        base_anim = self.game.assets.get(f'yokai2', self.game.assets['player/idle'])
         self.animation = base_anim.copy()
 
     def update(self):

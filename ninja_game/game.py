@@ -81,7 +81,7 @@ class Game:
             'mace': Animation(load_images(resource_path('data/images/entities/weapon/mace'), True), img_dur=5, loop=False),
             'mace1': Animation(load_images(resource_path('data/images/entities/weapon/mace1'), True), img_dur=5, loop=False),
             'slashTriangle': Animation(load_images(resource_path('data/images/entities/weapon/slashTriangle'), True), img_dur=1.5, loop=False),
-            'yokai1/idle': Animation(load_images(resource_path('data/images/entities/enemy/yokai1'), True), img_dur=5, loop=True),
+            'yokai2': Animation(load_images(resource_path('data/images/entities/enemy/yokai2'), True), img_dur=50, loop=True),
         }
 
         self.sfx = {
@@ -125,7 +125,7 @@ class Game:
         self.lighting = LightingSystem(self.display.get_size())
 
         self.weapon_type = 'mace' # On commence avec la lance
-        self.weaponDictionary = {1: 'mace', 2: 'mace1', 3: 'slashTriangle'}
+        self.weaponDictionary = {1: 'slashTriangle', 2: 'mace1', 3: 'mace'}
         self.currentWeaponIndex = 1
 
         self.font = pygame.font.SysFont("consolas", 16)
