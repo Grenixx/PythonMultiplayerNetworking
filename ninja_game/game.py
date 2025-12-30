@@ -162,6 +162,11 @@ class Game:
         
         while True:
             dt = self.clock.tick(self.max_fps) / 1000  # dt en secondes
+            
+            # --- PLAYER UPDATE ---
+            if not self.dead:
+                self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0),dt=dt)
+
             # Définir le mapping action -> int
             action_mapping = {
                 "idle": 0, "run": 1, "jump": 2, "wall_slide": 3, "slide": 4,
@@ -205,8 +210,6 @@ class Game:
                 if self.dead > 40:
                     self.load_level(self.level)
             
-            
-            
             for rect in self.leaf_spawners:
                 if random.random() * 49999 < rect.width * rect.height:
                     pos = (rect.x + random.random() * rect.width, rect.y + random.random() * rect.height)
@@ -217,17 +220,14 @@ class Game:
             self.tilemap.grass_manager.update_render(self.display, 1/10, offset=render_scroll,
                 rot_function=lambda x, y: int(math.sin(x / 100 + pygame.time.get_ticks() / 300) * 30) / 10)
 
-            
             # --- ENEMIES ---
             self.enemies_renderer.update()
             self.enemies_renderer.render(self.display, offset=render_scroll)
 
-            # --- PLAYER ---
+            # --- PLAYER RENDER ---
             if not self.dead:
-                self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0),dt=dt)
                 self.player.render(self.display, offset=render_scroll)
 
-            
             # [[x, y], direction, timer]
             for projectile in self.projectiles.copy():
                 projectile[0][0] += projectile[1]
@@ -266,21 +266,11 @@ class Game:
                 if kill:
                     self.particles.remove(particle)
 
-            #display_mask = pygame.mask.from_surface(self.display)
-            #display_sillhouette = display_mask.to_surface(
-            #    setcolor=(0, 0, 0, 180),
-            #    unsetcolor=(0, 0, 0, 0)
-            #)
-            #for offset in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            #    self.display_2.blit(display_sillhouette, offset)
             # --- REMOTE PLAYERS ---
             self.remote_players_renderer.render(self.display, offset=render_scroll)
 
             self.display_2.blit(self.display, (0, 0))
 
-            
-            # (le reste de ta boucle inchangé)
-             # (le reste de ta boucle inchangé)
             for event in pygame.event.get():
                 # Si l'utilisateur ferme la fenêtre
                 if event.type == pygame.QUIT:
