@@ -25,7 +25,7 @@ class EnemyManager:
         # Fallback if no spawners found? Or just 0 enemies? 
         # For compatibility, if no spawners, maybe spawn some random ones?
         if not found_spawners and not spawners:
-            for _ in range(20):
+            for _ in range(5):
                  self.create_enemy([random.randint(100,250), random.randint(40,100)], "mob2")
 
     def create_enemy(self, pos: list, enemy_type: str):
