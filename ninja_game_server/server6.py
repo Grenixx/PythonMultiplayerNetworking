@@ -69,7 +69,7 @@ class GameServer:
 
         # --- Charger la map ---
         self.map = TilemapServer()
-        self.map_id = 1
+        self.map_id = 0
         self.map.load(f"data/maps/{self.map_id}.json")
         print("carte chargée sur le serveur.")
 
@@ -161,12 +161,7 @@ class GameServer:
 
         # --- Request Level Change (Debug) ---
         if msg_type == 5:
-            next_map = int(self.map_id) + 1
-            # Simple loop back if file not found logic is handled in change_level? 
-            # Actually change_level just prints and returns. 
-            # We can try to cycle if we want, but 'next' implies +1.
-            # Let's try to load, if it fails maybe go back to 0?
-            # For now, just try next.
+            next_map = int(self.map_id) + 1 #modulo nombre de map dans le fichier
             self.change_level(next_map)
             return
 
