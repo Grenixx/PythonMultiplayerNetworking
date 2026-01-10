@@ -86,7 +86,7 @@ class Game:
             'mace': Animation(load_images(resource_path('data/images/entities/weapon/mace'), True), img_dur=5, loop=False),
             'mace1': Animation(load_images(resource_path('data/images/entities/weapon/mace1'), True), img_dur=5, loop=False),
             'slashTriangle': Animation(load_images(resource_path('data/images/entities/weapon/slashTriangle'), True), img_dur=1.5, loop=False),
-            'yokai2': Animation(load_images(resource_path('data/images/entities/enemy/boss1'), True), img_dur=50, loop=True),
+            'yokai2': Animation(load_images(resource_path('data/images/entities/enemy/yokai2'), True), img_dur=50, loop=True),
         }
 
         self.sfx = {
