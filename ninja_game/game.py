@@ -410,5 +410,5 @@ class Game:
             pygame.display.update()
             #self.clock.tick()
 
-    
-Game().run()
+if __name__ == "__main__":
+    Game().run()
