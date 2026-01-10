@@ -47,9 +47,10 @@ class Game:
             if m.is_primary:
                 monitor = m
         print(f"Initialising game with width: {monitor.width} and height: {monitor.height}")
+        SCALE = (320*2,180*2)
         self.screen = pygame.display.set_mode((monitor.width, monitor.height))
-        self.display = pygame.Surface((320, 180), pygame.SRCALPHA)
-        self.display_2 = pygame.Surface((320, 180))
+        self.display = pygame.Surface(SCALE, pygame.SRCALPHA)
+        self.display_2 = pygame.Surface(SCALE)
 
         self.clock = pygame.time.Clock()
         
@@ -118,7 +119,7 @@ class Game:
         self.net.connect()
         self.remote_players = {}
         
-        self.shader_bg = ShaderBackground(320, 240, "data/shaders/3.4.frag")
+        self.shader_bg = ShaderBackground(SCALE[0], SCALE[1], "data/shaders/3.4.frag")
 
         self.controller = Controller()
 
@@ -315,6 +316,9 @@ class Game:
                         self.player.weapon.set_weapon(self.weapon_type)
                     if event.key == pygame.K_n:
                         self.net.send_map_change_request()
+
+                    # Zoom dezoom :D
+
                 # Si une touche est relâchée
                 if event.type == pygame.KEYUP or event.type == pygame.K_SPACE:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_q:
@@ -350,7 +354,6 @@ class Game:
                 if self.controller.button_b:
                     self.player.dash()
 
-                # Mouvement avec le stick ou D-pad :
                 move_x = 0
                 if self.controller.left_stick_x < -0.5 or self.controller.dpad_left:
                     move_x = -1
@@ -358,7 +361,6 @@ class Game:
                     move_x = 1
                 self.movement = [move_x < 0, move_x > 0]
 
-                # Gâchettes :
                 if self.controller.left_trigger > 0.2:
                     self.player.dash()
                 if self.controller.right_trigger > 0.2:
@@ -408,7 +410,6 @@ class Game:
 
 
             pygame.display.update()
-            #self.clock.tick()
 
-    
-Game().run()
+if __name__ == "__main__":
+    Game().run()
