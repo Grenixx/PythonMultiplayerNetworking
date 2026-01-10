@@ -19,8 +19,6 @@ class EnemyManager:
         for spawner in spawners:
             if spawner['variant'] == 1: # Enemy spawner
                 self.create_enemy(spawner['pos'], "mob2")
-        
-
 
     def create_enemy(self, pos: list, enemy_type: str):
         enemy_types = {"blob": Blob, "mob2": Mob2}
