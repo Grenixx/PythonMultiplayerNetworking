@@ -167,6 +167,7 @@ DIST_WANDER = 8
 MIN_WANDER_DIST = 2
 MIN_WANDER_SPEED = 1.5
 WANDER_SPEED_DECAY = 0.01
+MAX_DISTANCE_FROM_SPAWN = 16*12
 
 class Mob2(Enemy):
     def __init__(self, eid, pos, enemy_manager):
@@ -179,6 +180,7 @@ class Mob2(Enemy):
         self.wander_speed = self.speed
     
     def create_wander_pos(self, hit_result = [False, False]):
+        pos = [self.properties['x'], self.properties['y']]
         if self.wander_angle == None:
             self.wander_angle = angle([self.properties['vx'], self.properties['vy']])
         else:
@@ -191,7 +193,7 @@ class Mob2(Enemy):
             self.wander_dist = max(self.wander_dist + random.uniform(-DIST_WANDER//4, DIST_WANDER//4), MIN_WANDER_DIST)
         
         #self.wander_pos = [self.properties['x'] + random.choice((-1, 1)) * dist, self.properties['y'] + random.randint(int(-dist), int(dist))]
-        
+
         if hit_result[0] and not hit_result[1]: # round angle to -pi/2 or pi/2
             if self.wander_angle >= 0 and self.wander_angle <= pi:
                 self.wander_angle = pi/2
@@ -202,7 +204,11 @@ class Mob2(Enemy):
                 self.wander_angle = 0
             else:
                 self.wander_angle = pi
-        self.wander_pos = add_vecs(vec_from_angle(self.wander_dist, self.wander_angle), [self.properties['x'], self.properties['y']])
+        
+        if hit_result == [False, False]:
+            if distane_to(pos, self.spawn_position) > MAX_DISTANCE_FROM_SPAWN:
+                self.wander_angle = angle(sub_vecs(self.spawn_position, pos))
+        self.wander_pos = add_vecs(vec_from_angle(self.wander_dist, self.wander_angle), pos)
         #print(self.wander_pos, self.properties['x'], self.properties['y'])
         #print(f"dist : {self.wander_dist}")
         #print(f"angle : {self.wander_angle}")
@@ -210,7 +216,6 @@ class Mob2(Enemy):
     def physics_process(self, delta: float):
         pos = [self.properties['x'], self.properties['y']]
         players = self.enemy_manager.players
-        tilemap = self.enemy_manager.tilemap
         
         # --- Trouver la cible la plus proche ---
         closest_dist = None
@@ -226,9 +231,10 @@ class Mob2(Enemy):
             self.wander_angle = None
             self.wander_dist = None
             self.wander_pos = None
+            self.wander_speed = self.speed
             self.properties['target_player'] = closest_pid
-            dist = distane_to(pos, self.players_last_pos[closest_pid])
-            if dist > 1:
+            dist = sqrt(closest_dist)
+            if dist > 5:
                 velocity = normalized(vector_to(pos, self.players_last_pos[closest_pid]))
                 velocity = [i * self.speed for i in velocity]
         else:
@@ -256,10 +262,11 @@ class Mob2(Enemy):
         # --- For animations --- 
 
         if closest_pid:
-            if self.properties['vx'] < 0:
-                self.properties['flip'] = True
-            else:
-                self.properties['flip'] = False
+            if sqrt(closest_dist) > 5:
+                if self.properties['vx'] < 0:
+                    self.properties['flip'] = True
+                else:
+                    self.properties['flip'] = False
         else:
             if self.properties['flip'] and self.wander_angle > -pi/3 and self.wander_angle < pi/3:
                 self.properties['flip'] = False
