@@ -318,7 +318,9 @@ class PurpleCircle:
             if player_col.colliderect(enemy_rect) == True:
                 if not self.game.dead:
                     self.game.screenshake = max(16, self.game.screenshake)
+                    self.game.sfx['hit'].play()
                 self.game.dead += 1
+
 
         # Si aucune action offensive n'est en cours, on ne fait rien.
         if not is_attacking:

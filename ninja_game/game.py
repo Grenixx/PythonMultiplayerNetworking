@@ -49,7 +49,7 @@ class Game:
         print(f"Initialising game with width: {monitor.width} and height: {monitor.height}")
         self.screen = pygame.display.set_mode((monitor.width, monitor.height))
         
-        self.base_resolution = (320*2, 180*2)
+        self.base_resolution = (320, 180)
         self.zoom = 1.0
         SCALE = self.base_resolution
         
@@ -97,12 +97,15 @@ class Game:
             'ambience': pygame.mixer.Sound(resource_path('data/sfx/ambience.wav')),
         }
 
+        self.MUSIC_Volume = 0.5  ############# Volume global #############
+        self.SFX_Volume = 0.5  ########### Volume des SFX #############
+
         # Ajuster les volumes
-        self.sfx['ambience'].set_volume(0.01)
-        self.sfx['shoot'].set_volume(0.01)
-        self.sfx['hit'].set_volume(0.01)
-        self.sfx['dash'].set_volume(0.01)
-        self.sfx['jump'].set_volume(0.01)
+        self.sfx['ambience'].set_volume(self.SFX_Volume)
+        self.sfx['shoot'].set_volume(self.SFX_Volume)
+        self.sfx['hit'].set_volume(self.SFX_Volume)
+        self.sfx['dash'].set_volume(self.SFX_Volume)
+        self.sfx['jump'].set_volume(self.SFX_Volume)
 
         
         self.clouds = Clouds(self.assets['clouds'], count=5)
@@ -173,11 +176,11 @@ class Game:
 
         
     def run(self):
-        pygame.mixer.music.load(resource_path('data/music.wav'))
-        pygame.mixer.music.set_volume(0.001)
+        pygame.mixer.music.load(resource_path('data/music/musicDynamiqueLoop.mp3'))
+        pygame.mixer.music.set_volume(self.MUSIC_Volume)
         pygame.mixer.music.play(-1)
         
-        self.sfx['ambience'].play(-1)
+        #self.sfx['ambience'].play(-1)
         
         while True:
             dt = self.clock.tick(self.max_fps) / 1000  # dt en secondes
@@ -249,28 +252,28 @@ class Game:
                 self.player.render(self.display, offset=render_scroll)
 
             # [[x, y], direction, timer]
-            for projectile in self.projectiles.copy():
-                projectile[0][0] += projectile[1]
-                projectile[2] += 1
-                img = self.assets['projectile']
-                self.display.blit(img, (projectile[0][0] - img.get_width() / 2 - render_scroll[0], projectile[0][1] - img.get_height() / 2 - render_scroll[1]))
-                if self.tilemap.solid_check(projectile[0]):
-                    self.projectiles.remove(projectile)
-                    for i in range(4):
-                        self.sparks.append(Spark(projectile[0], random.random() - 0.5 + (math.pi if projectile[1] > 0 else 0), 2 + random.random()))
-                elif projectile[2] > 360:
-                    self.projectiles.remove(projectile)
-                elif abs(self.player.dashing) < 50:
-                    if self.player.rect().collidepoint(projectile[0]):
-                        self.projectiles.remove(projectile)
-                        self.dead += 1
-                        self.sfx['hit'].play()
-                        self.screenshake = max(16, self.screenshake)
-                        for i in range(30):
-                            angle = random.random() * math.pi * 2
-                            speed = random.random() * 5
-                            self.sparks.append(Spark(self.player.rect().center, angle, 2 + random.random()))
-                            self.particles.append(Particle(self, 'particle', self.player.rect().center, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
+            #for projectile in self.projectiles.copy():
+            #    projectile[0][0] += projectile[1]
+            #    projectile[2] += 1
+            #    img = self.assets['projectile']
+            #    self.display.blit(img, (projectile[0][0] - img.get_width() / 2 - render_scroll[0], projectile[0][1] - img.get_height() / 2 - render_scroll[1]))
+            #    if self.tilemap.solid_check(projectile[0]):
+            #        self.projectiles.remove(projectile)
+            #    for i in range(4):
+            #            self.sparks.append(Spark(projectile[0], random.random() - 0.5 + (math.pi if projectile[1] > 0 else 0), 2 + random.random()))
+            #    elif projectile[2] > 360:
+            #        self.projectiles.remove(projectile)
+            #    elif abs(self.player.dashing) < 50:
+            #        if self.player.rect().collidepoint(projectile[0]):
+            #            self.projectiles.remove(projectile)
+            #            self.dead += 1
+            #            self.sfx['hit'].play()
+            #            self.screenshake = max(16, self.screenshake)
+            #            for i in range(30):
+            #                angle = random.random() * math.pi * 2
+            #                speed = random.random() * 5
+            #                self.sparks.append(Spark(self.player.rect().center, angle, 2 + random.random()))
+            #                self.particles.append(Particle(self, 'particle', self.player.rect().center, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
                         
             for spark in self.sparks.copy():
                 kill = spark.update()
