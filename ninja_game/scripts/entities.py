@@ -139,7 +139,7 @@ class Player(PhysicsEntity):
         if self.air_time > 2 :
             if not self.game.dead:
                 self.game.screenshake = max(16, self.game.screenshake)
-            self.game.dead += 1
+            self.game.dead += dt * 60
         
         if self.wall_slide:
             self.air_time = 0.08
@@ -300,7 +300,7 @@ class PurpleCircle:
         base_anim = self.game.assets.get(f'yokai2', self.game.assets['player/idle'])
         self.animation = base_anim.copy()
 
-    def update(self):
+    def update(self, dt=1/60):
         """
         Vérifie les collisions entre le joueur et les ennemis.
         Si le joueur est en dash et touche un ennemi, on le supprime.
@@ -319,7 +319,7 @@ class PurpleCircle:
                 if not self.game.dead:
                     self.game.screenshake = max(16, self.game.screenshake)
                     self.game.sfx['hit'].play()
-                self.game.dead += 1
+                self.game.dead += dt * 60
 
 
         # Si aucune action offensive n'est en cours, on ne fait rien.

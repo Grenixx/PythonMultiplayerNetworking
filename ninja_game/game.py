@@ -234,7 +234,7 @@ class Game:
                         self.transition = 0
             
             if self.dead:
-                self.dead += 1
+                self.dead += dt * 60
                 if self.dead >= 10:
                     self.transition = min(30, self.transition + dt * 60)
                 if self.dead > 40:
@@ -251,7 +251,7 @@ class Game:
                 rot_function=lambda x, y: int(math.sin(x / 100 + pygame.time.get_ticks() / 300) * 30) / 10)
 
             # --- ENEMIES ---
-            self.enemies_renderer.update()
+            self.enemies_renderer.update(dt)
             self.enemies_renderer.render(self.display, offset=render_scroll, dt=dt)
 
             # --- PLAYER RENDER ---
