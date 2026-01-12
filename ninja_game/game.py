@@ -257,6 +257,12 @@ class Game:
             # --- PLAYER RENDER ---
             if not self.dead:
                 self.player.render(self.display, offset=render_scroll)
+                if self.debug:
+                    mask_image = self.player.mask.to_surface(unsetcolor=(0,0,0,0), setcolor=(255,0,0,255))
+                    self.display.blit(mask_image, (
+                        (self.player.rect().x-3) - render_scroll[0], 
+                        (self.player.rect().y-3) - render_scroll[1]
+                    ))
 
             # [[x, y], direction, timer]
             #for projectile in self.projectiles.copy():
