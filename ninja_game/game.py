@@ -273,7 +273,7 @@ class Game:
             #    elif abs(self.player.dashing) < 50:
             #        if self.player.rect().collidepoint(projectile[0]):
             #            self.projectiles.remove(projectile)
-            #            self.dead += 1
+            #            self.dead += dt * 60
             #            self.sfx['hit'].play()
             #            self.screenshake = max(16, self.screenshake)
             #            for i in range(30):
