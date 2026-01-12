@@ -322,16 +322,23 @@ class PurpleCircle:
 
         for eid, (ex, ey, flip) in list(self.game.net.enemies.items()):
             player = self.game.player
-            player_col = player.rect()
-
 
             enemy_rect = pygame.Rect(ex - self.radius, ey - self.radius, self.radius * 2, self.radius * 2)
-            
-            if player_col.colliderect(enemy_rect) == True:
-                if not self.game.dead:
-                    self.game.screenshake = max(16, self.game.screenshake)
-                    self.game.sfx['hit'].play()
-                self.game.dead += dt * 60
+            player_rect = self.game.player.rect()
+
+            if player_rect.colliderect(enemy_rect):
+                player_mask =self.game.player.mask
+                enemy_mask = pygame.Mask((enemy_rect.width, enemy_rect.height))
+                enemy_mask.fill()
+
+                offset_x = enemy_rect.x - player_rect.x
+                offset_y = enemy_rect.y - player_rect.y
+
+                if player_mask.overlap(enemy_mask, (offset_x, offset_y)):
+                    if not self.game.dead:
+                        self.game.screenshake = max(16, self.game.screenshake)
+                        self.game.sfx['hit'].play()
+                        self.game.dead += dt * 60
 
 
         # Si aucune action offensive n'est en cours, on ne fait rien.
