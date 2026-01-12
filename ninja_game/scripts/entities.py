@@ -86,7 +86,19 @@ class PhysicsEntity:
         self.animation.update(dt)
         #self.pos[0] = round(self.pos[0])
         #self.pos[1] = round(self.pos[1])
-        
+
+        current_img = self.animation.img()
+
+        if self.flip:
+            current_img = pygame.transform.flip(current_img, True, False)
+
+        self.image = current_img
+
+        # CRÉATION DU MASQUE
+        self.mask = pygame.mask.from_surface(self.image)
+
+        new_image = self.animation.img()
+
     def render(self, surf, offset=(0, 0)):
         surf.blit(pygame.transform.flip(self.animation.img(), self.flip, False),
                   (self.pos[0] - offset[0] + self.anim_offset[0],
