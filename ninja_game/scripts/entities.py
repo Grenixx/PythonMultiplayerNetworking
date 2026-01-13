@@ -424,23 +424,22 @@ class PurpleCircle:
             
             surf.blit(pygame.transform.flip(imgAnim, flip, False), (screen_x - imgAnim.get_width()//2, screen_y - imgAnim.get_height()//2))
             self.game.tilemap.grass_manager.apply_force((x, y), 6, 12)
-            # Debug: draw the enemy mask overlay / outline when enabled on the game object
-            
-            w, h = imgAnim.get_size()
-            top_left = (screen_x - w // 2, screen_y - h // 2)
-            try:
-                mask_surf = enemy_mask.to_surface(setcolor=(255, 0, 255, 120), unsetcolor=(0, 0, 0, 0))
-                mask_surf = mask_surf.convert_alpha()
-                surf.blit(mask_surf, top_left)
-            except Exception:
-                pass
+            if (self.game.debug):
+                w, h = imgAnim.get_size()
+                top_left = (screen_x - w // 2, screen_y - h // 2)
+                try:
+                    mask_surf = enemy_mask.to_surface(setcolor=(255, 0, 255, 120), unsetcolor=(0, 0, 0, 0))
+                    mask_surf = mask_surf.convert_alpha()
+                    surf.blit(mask_surf, top_left)
+                except Exception:
+                    pass
 
-            # draw outline for clearer visualization
-            outline = enemy_mask.outline()
-            if outline:
-                pts = [(top_left[0] + p[0], top_left[1] + p[1]) for p in outline]
-                if len(pts) >= 3:
-                    pygame.draw.lines(surf, (0, 255, 0), True, pts, 1)
+                # draw outline for clearer visualization
+                outline = enemy_mask.outline()
+                if outline:
+                    pts = [(top_left[0] + p[0], top_left[1] + p[1]) for p in outline]
+                    if len(pts) >= 3:
+                        pygame.draw.lines(surf, (0, 255, 0), True, pts, 1)
             
             
             
