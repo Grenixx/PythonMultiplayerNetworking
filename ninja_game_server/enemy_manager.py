@@ -289,7 +289,7 @@ class Patrol(Enemy):
             if sqrt(closest_dist) > 5:
                 if self.properties['vx'] < 0:
                     self.properties['flip'] = True
-                else:
+                elif self.properties['vx'] > 0:
                     self.properties['flip'] = False
         else:
             if self.properties['flip'] and self.wander_angle > -pi/3 and self.wander_angle < pi/3:
