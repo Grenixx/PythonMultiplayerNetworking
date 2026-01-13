@@ -27,7 +27,13 @@ class Weapon:
         self.weapon_equiped.update()
 
     def render(self, surf, offset=(0, 0)):
-        self.weapon_equiped.render(surf, offset)
+        self.weapon_equiped.render(self.display, offset=render_scroll)
+        if self.debug:
+            mask_image = self.player.mask.to_surface(unsetcolor=(0,0,0,0), setcolor=(255,0,0,255))
+            self.display.blit(mask_image, (
+                (self.player.rect().x-3) - render_scroll[0], 
+                (self.player.rect().y-3) - render_scroll[1]
+            ))
 
     def swing(self, direction=None):
         self.weapon_equiped.swing(direction)
@@ -87,6 +93,11 @@ class WeaponBase:
             if self.animation.done:
                 self.attack_timer = 0
 
+            self.weapon_image = self.get_image()
+            self.weapon_mask = pygame.mask.from_surface(self.weapon_image)
+
+            topleft_pos = self.get_render_pos(offset=(0,0))
+            self.current_rect = pygame.Rect(topleft_pos, self.weapon_image.get_size())
     # ------------------------
     # Swing / attaque
     # ------------------------
@@ -108,30 +119,29 @@ class WeaponBase:
     # Obtenir image (avec rotation et flip)
     # ------------------------
     def get_image(self):
-        img = self.animation.img()
+        raw_img = self.animation.img()
+        bg_color= raw_img.get_at((0,0))
+        raw_img.set_colorkey(bg_color)
 
-        # angle selon direction
         if self.attack_direction == "up":
             angle = 90
         elif self.attack_direction == "down":
             angle = -90
-        else:  # gauche/droite ou front
+        else:
             angle = 0
 
-        img = pygame.transform.rotate(img, angle)
+        final_img = pygame.transform.rotate(raw_img, angle)
 
-        # flip horizontal si attaque vers la gauche ou joueur regarde à gauche
         if self.attack_direction == "left":
-            img = pygame.transform.flip(img, True, False)
+            final_img = pygame.transform.flip(final_img, True, False)
         elif self.attack_direction == "front" and self.owner.flip:
-            img = pygame.transform.flip(img, True, False)
+            final_img = pygame.transform.flip(final_img, True, False)
         elif self.attack_direction == "up" and self.owner.flip:
-            img = pygame.transform.flip(img, True, False)
-
+            final_img = pygame.transform.flip(final_img, True, False)
         elif self.attack_direction == "down" and not self.owner.flip:
-            img = pygame.transform.flip(img, True, False)
-
-        return img
+            final_img = pygame.transform.flip(final_img, True, False)
+                    
+        return final_img
 
     # ------------------------
     # Calcul de position de rendu
@@ -176,9 +186,10 @@ class WeaponBase:
     # ------------------------
     def render_debug_hitbox(self, surf, rect, offset):
         if WeaponBase.debug:
-            pygame.draw.rect(
-                surf,
-                (255, 0, 0),
-                pygame.Rect(rect.x - offset[0], rect.y - offset[1], rect.width, rect.height),
-                2
-            )
+            if hasattr(self, 'weapon_mask'):
+                render_pos= (rect.x - offset[0], rect.y - offset[1])
+                outline = self.weapon_mask.outline()
+                if outline and len(outline)>1:
+                    # On décale les points du contour à la position de l'arme
+                    adjusted_points = [(p[0] + render_pos[0], p[1] + render_pos[1]) for p in outline]
+                    pygame.draw.lines(surf, (255, 0, 0), True, adjusted_points, 2)
