@@ -177,7 +177,10 @@ class Game:
         
         self.scroll = [0, 0]
         self.dead = 0
+        self.invincible_frame_time = 0
         self.transition = -30
+
+        self.invincible_frame_time = 200
 
         
     def run(self):
@@ -190,6 +193,9 @@ class Game:
         while True:
             dt = self.clock.tick(self.max_fps) / 1000  # dt en secondes
             
+            if self.invincible_frame_time > 0:
+                self.invincible_frame_time -= dt * 60
+
             # --- Check Server Level Change ---
             if self.net.map_change_id is not None:
                 new_map_id = self.net.map_change_id
@@ -234,7 +240,7 @@ class Game:
                     if self.transition > 0:
                         self.transition = 0
             
-            if self.dead:
+            if self.dead :
                 self.dead += dt * 60
                 if self.dead >= 10:
                     self.transition = min(30, self.transition + dt * 60)

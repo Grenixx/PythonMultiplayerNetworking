@@ -350,7 +350,7 @@ class PurpleCircle:
                 offset_y = enemy_rect.y - player_rect.y
 
                 if player_mask.overlap(enemy_mask, (offset_x, offset_y)):
-                    if not self.game.dead:
+                    if not self.game.dead and self.game.invincible_frame_time <= 0: #c est pour l invincible frame time
                         self.game.screenshake = max(16, self.game.screenshake)
                         self.game.sfx['hit'].play()
                         self.game.dead += dt * 60
