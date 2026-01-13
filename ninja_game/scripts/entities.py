@@ -358,7 +358,7 @@ class PurpleCircle:
             #        hit_by_dash = True
             
             # L'arme en mouvement touche l'ennemi
-           hit_by_weapon = is_attacking and weapon_hitbox.colliderect(enemy_rect)
+            hit_by_weapon = is_attacking and weapon_hitbox.colliderect(enemy_rect)
             if hit_by_weapon:
                 enemy_mask = pygame.Mask((enemy_rect.width, enemy_rect.height))
                 enemy_mask.fill()
