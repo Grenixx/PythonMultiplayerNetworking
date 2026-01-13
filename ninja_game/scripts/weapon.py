@@ -57,7 +57,8 @@ class WeaponBase:
         self.animation = self.load_animation(weapon_type)
 
         # distance fixe de l'arme par rapport au joueur
-        self.offset_amount = 14  
+        self.offset_amount = 14 
+        self.current_rect = pygame.Rect(0, 0, 0, 0)
 
     # ------------------------
     # Charge l'animation depuis assets
