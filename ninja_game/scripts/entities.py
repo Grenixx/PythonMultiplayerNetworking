@@ -97,8 +97,6 @@ class PhysicsEntity:
         # CRÉATION DU MASQUE
         self.mask = pygame.mask.from_surface(self.image)
 
-        new_image = self.animation.img()
-
     def render(self, surf, offset=(0, 0)):
         surf.blit(pygame.transform.flip(self.animation.img(), self.flip, False),
                   (self.pos[0] - offset[0] + self.anim_offset[0],
@@ -346,7 +344,8 @@ class PurpleCircle:
             return
             
         to_remove = []
-        weapon_rect = player.weapon.weapon_equiped.rect()
+        current_weapon = player.weapon.weapon_equiped
+        weapon_hitbox = current_weapon.current_rect
 
         
         for eid, (ex, ey, flip) in list(self.game.net.enemies.items()):
@@ -359,10 +358,16 @@ class PurpleCircle:
             #        hit_by_dash = True
             
             # L'arme en mouvement touche l'ennemi
-            hit_by_weapon = is_attacking and weapon_rect.colliderect(enemy_rect)
-
+           hit_by_weapon = is_attacking and weapon_hitbox.colliderect(enemy_rect)
             if hit_by_weapon:
-                to_remove.append(eid)
+                enemy_mask = pygame.Mask((enemy_rect.width, enemy_rect.height))
+                enemy_mask.fill()
+
+                offset_x = enemy_rect.x - weapon_hitbox.x
+                offset_y = enemy_rect.y - weapon_hitbox.y
+
+                if current_weapon.weapon_mask.overlap(enemy_mask, (offset_x, offset_y)):
+                    to_remove.append(eid)
 
         for eid in to_remove:
             # Supprime localement pour effet instantané
