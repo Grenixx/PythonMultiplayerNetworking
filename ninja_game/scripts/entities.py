@@ -163,7 +163,7 @@ class Player(PhysicsEntity):
                 self.jump()
              
         self.wall_slide = False
-        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 0.067 and not self.collisions['down']:
+        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 0.1 and not self.collisions['down']:
             self.wall_slide = True
             self.velocity[1] = min(self.velocity[1], self.wall_slide_speed)
             if self.collisions['right']:
@@ -307,9 +307,17 @@ class PurpleCircle:
         self.game = game
         self.radius = 8  # rayon du cercle pour les collisions
 
-        base_anim = self.game.assets.get(f'yokai2', self.game.assets['player/idle'])
+        base_anim = self.game.assets.get(f'patrol/idle', self.game.assets['player/idle'])
         self.animation = base_anim.copy()
         self.enemy_masks = {}
+        self.enemy_anims = {}  # eid -> animation
+        self.state = 'idle'
+
+    def set_state_for_enemy(self, eid, state):
+        if eid not in self.enemy_anims or getattr(self.enemy_anims[eid], 'state', None) != state:
+            base_anim = self.game.assets.get(f'patrol/{state}', self.game.assets['player/idle'])
+            self.enemy_anims[eid] = base_anim.copy()
+            self.enemy_anims[eid].state = state
 
     def update(self, dt=1/60):
         """
@@ -320,22 +328,24 @@ class PurpleCircle:
         is_attacking = player.weapon.weapon_equiped.attack_timer > 0
 
         for eid, (ex, ey, flip, state) in list(self.game.net.enemies.items()):
-            player = self.game.player
+            # Mise à jour de l'état/animation de l'ennemi
+            self.set_state_for_enemy(eid, state)
+            anim = self.enemy_anims[eid]
 
-            enemy_img = self.animation.img()
+            
+            enemy_img = anim.img()
             enemy_rect = enemy_img.get_rect(center=(ex, ey))
-            # enemy_rect = pygame.Rect(ex - self.radius, ey - self.radius, self.radius * 2, self.radius * 2)
+            
             player_rect = self.game.player.rect()
+            
+
             if enemy_img not in self.enemy_masks:
                 self.enemy_masks[enemy_img] = pygame.mask.from_surface(enemy_img)
             enemy_mask = self.enemy_masks[enemy_img]
 
             if player_rect.colliderect(enemy_rect):
-                player_mask =self.game.player.mask
-                enemy_img = self.animation.img()
-                enemy_mask = pygame.mask.from_surface(enemy_img)
-                enemy_rect = enemy_img.get_rect(center=(ex, ey))
-
+                player_mask = self.game.player.mask
+                
                 offset_x = enemy_rect.x - player_rect.x
                 offset_y = enemy_rect.y - player_rect.y
 
@@ -356,20 +366,19 @@ class PurpleCircle:
 
         
         for eid, (ex, ey, flip, state) in list(self.game.net.enemies.items()):
-            enemy_rect = pygame.Rect(ex - self.radius, ey - self.radius, self.radius * 2, self.radius * 2)
-            # JE RETIRE LE DASH QUI TUE
-            #hit_by_dash = False
-            #if is_dashing:
-            #    dx, dy = ex - player_center[0], ey - player_center[1]
-            #    if (dx*dx + dy*dy) < (self.radius + 10)**2: # Plus rapide que sqrt
-            #        hit_by_dash = True
+            # On récupère l'animation spécifique (supposée déjà init par le set_state plus haut)
+            if eid not in self.enemy_anims: continue
+            anim = self.enemy_anims[eid]
+            enemy_img = anim.img()
+            
+            enemy_rect = enemy_img.get_rect(center=(ex, ey))
             
             # L'arme en mouvement touche l'ennemi
             hit_by_weapon = is_attacking and weapon_hitbox.colliderect(enemy_rect)
             if hit_by_weapon:
-                enemy_img = self.animation.img()
-                enemy_mask = pygame.mask.from_surface(enemy_img)
-                enemy_rect = enemy_img.get_rect(center=(ex, ey))
+                if enemy_img not in self.enemy_masks:
+                     self.enemy_masks[enemy_img] = pygame.mask.from_surface(enemy_img)
+                enemy_mask = self.enemy_masks[enemy_img]
 
                 offset_x = enemy_rect.x - weapon_hitbox.x
                 offset_y = enemy_rect.y - weapon_hitbox.y
@@ -392,15 +401,22 @@ class PurpleCircle:
         #          (self.pos[0] - offset[0] + self.anim_offset[0],
         #           self.pos[1] - offset[1] + self.anim_offset[1]))
         
-        self.animation.update(dt)
-        imgAnim = self.animation.img()
+        active_eids = set(self.game.net.enemies.keys())
+        current_eids = set(self.enemy_anims.keys())
+        for eid in current_eids - active_eids:
+            del self.enemy_anims[eid]
 
-        img = self.animation.img()
-        if img not in self.enemy_masks:
-            self.enemy_masks[img] = pygame.mask.from_surface(img)
-        enemy_mask = self.enemy_masks[img]
-        
         for eid, (x, y, flip, state) in self.game.net.enemies.items():
+            self.set_state_for_enemy(eid, state)
+            anim = self.enemy_anims[eid]
+            
+            anim.update(dt)
+            imgAnim = anim.img()
+            
+            if imgAnim not in self.enemy_masks:
+                self.enemy_masks[imgAnim] = pygame.mask.from_surface(imgAnim)
+            enemy_mask = self.enemy_masks[imgAnim]
+            
             screen_x = x - offset[0]
             screen_y = y - offset[1]
 
@@ -410,7 +426,7 @@ class PurpleCircle:
             self.game.tilemap.grass_manager.apply_force((x, y), 6, 12)
             # Debug: draw the enemy mask overlay / outline when enabled on the game object
             if getattr(self.game, 'debug_enemy_mask', False):
-                w, h = img.get_size()
+                w, h = imgAnim.get_size()
                 top_left = (screen_x - w // 2, screen_y - h // 2)
                 try:
                     mask_surf = enemy_mask.to_surface(setcolor=(255, 0, 255, 120), unsetcolor=(0, 0, 0, 0))
