@@ -163,7 +163,7 @@ class Player(PhysicsEntity):
                 self.jump()
              
         self.wall_slide = False
-        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 0.1 and not self.collisions['down']:
+        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 0.067 and not self.collisions['down']:
             self.wall_slide = True
             self.velocity[1] = min(self.velocity[1], self.wall_slide_speed)
             if self.collisions['right']:
