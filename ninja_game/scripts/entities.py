@@ -458,6 +458,7 @@ class RemotePlayerRenderer:
             self.pid = pid
             self.pos = list(pos)
             self.target_pos = list(pos) # Position cible pour le smoothing
+            self.velocity = [0.0, 0.0]  # Vélocité reçue pour l'extrapolaton
             self.size = size
             self.flip = flip
             self.smoothing_speed = 20 # Vitesse de lissage
@@ -492,17 +493,24 @@ class RemotePlayerRenderer:
             else:
                  self.air_time = 0
 
-        def update(self, pos, action, flip, dt=1, weapon_id=1):
-            self.target_pos = list(pos) # On met à jour la cible, pas la position directe
+        def update(self, pos, action, flip, dt=1, weapon_id=1, vx=0.0, vy=0.0):
+            self.target_pos = list(pos) # On met à jour la cible
             self.flip = flip
+            self.velocity = [vx, vy] # On met à jour la vélocité
             
             # Weapon Sync
             if weapon_id != self.weapon_id:
                 self.weapon_id = weapon_id
                 w_type = self.weapon_map.get(weapon_id, 'mace')
                 self.weapon.set_weapon(w_type)
-            
-            # LERP (Linear Interpolation)
+
+            # 1. Extrapolation (Dead Reckoning)
+            # On prédit où le joueur devrait être selon sa vélocité
+            self.pos[0] += self.velocity[0] * dt
+            self.pos[1] += self.velocity[1] * dt
+
+            # 2. Smoothing (LERP)
+            # On lisse la différence entre notre prédiction et la réalité du serveur
             self.pos[0] += (self.target_pos[0] - self.pos[0]) * self.smoothing_speed * dt
             self.pos[1] += (self.target_pos[1] - self.pos[1]) * self.smoothing_speed * dt
             
@@ -530,7 +538,7 @@ class RemotePlayerRenderer:
             if pid == self.game.net.id:
                 continue
 
-            x, y, action, flip, weapon_id = data
+            x, y, action, flip, weapon_id, vx, vy = data
 
             #self.game.tilemap.grass_manager.apply_force((x, y), 4, 8)
             # On veut la force au centre des pieds, pas en haut à gauche
@@ -541,7 +549,7 @@ class RemotePlayerRenderer:
             if pid not in self.players:
                 self.players[pid] = self.RemotePlayer(self.game, pid, (x,y), action, flip, weapon_id=weapon_id)
 
-            self.players[pid].update((x,y), action, flip, dt, weapon_id=weapon_id)
+            self.players[pid].update((x,y), action, flip, dt, weapon_id=weapon_id, vx=vx, vy=vy)
             self.players[pid].render(surf, offset)
 
 

@@ -27,7 +27,7 @@ class PlayerManager:
         pid = self.next_id
         self.next_id += 1
         self.clients[addr] = pid
-        self.players[pid] = (0, 0, 'idle', False, 1) # x, y, action, flip, weapon_id
+        self.players[pid] = (0, 0, 'idle', False, 1, 0.0, 0.0) # x, y, action, flip, weapon_id, vx, vy
         return pid
 
     def remove_player(self, addr):
@@ -44,15 +44,15 @@ class PlayerManager:
             return
         pid = self.clients[addr]
 
-        if len(data) < 11:
-            return  # paquet trop court (maintenant 11 bytes avec weapon_id)
+        if len(data) < 19:
+            return  # paquet trop court (maintenant 19 bytes avec vx, vy)
 
-        x, y = struct.unpack("ff", data[:8])
-        action_id, flip_byte, weapon_id = struct.unpack("BBB", data[8:11])
+        x, y, vx, vy = struct.unpack("ffff", data[:16])
+        action_id, flip_byte, weapon_id = struct.unpack("BBB", data[16:19])
         action_map = {0: 'idle', 1: 'run', 2: 'jump', 3: 'wall_slide', 4: 'slide', 5: 'attack_front', 6: 'attack_up', 7: 'attack_down'}
         action = action_map.get(action_id, 'idle')
         flip = bool(flip_byte)
-        self.players[pid] = (x, y, action, flip, weapon_id)
+        self.players[pid] = (x, y, action, flip, weapon_id, vx, vy)
 
 
 # ==============================
@@ -203,8 +203,8 @@ class GameServer:
                     break
         
         for pid in self.players.players:
-            _, _, a, f, w = self.players.players[pid]
-            self.players.players[pid] = (spawn_pos[0], spawn_pos[1], a, f, w)
+            _, _, a, f, w, vx, vy = self.players.players[pid]
+            self.players.players[pid] = (spawn_pos[0], spawn_pos[1], a, f, w, vx, vy)
 
         self.broadcast_map_change(map_id)
 
@@ -221,11 +221,11 @@ class GameServer:
         # Type 2 : Update World
         # On préfixe avec \x02
         payload = struct.pack("BB", 2, len(self.players.players))
-        for pid, (x, y, action, flip, weapon_id) in self.players.players.items():
+        for pid, (x, y, action, flip, weapon_id, vx, vy) in self.players.players.items():
             action_bytes = action.encode('utf-8')[:15]
             action_bytes += b'\x00' * (15 - len(action_bytes))
             flip_byte = b'\x01' if flip else b'\x00'
-            payload += struct.pack("Iff", pid, x, y) + action_bytes + flip_byte + struct.pack("B", weapon_id)
+            payload += struct.pack("Iffff", pid, x, y, vx, vy) + action_bytes + flip_byte + struct.pack("B", weapon_id)
 
         payload += struct.pack("B", len(self.EnemyManager.enemies))
         #for eid, e in self.EnemyManager.enemies.items():
