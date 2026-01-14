@@ -453,7 +453,7 @@ class RemotePlayerRenderer:
     """Affiche et anime les autres joueurs avec leur sprite."""
 
     class RemotePlayer:
-        def __init__(self, game, pid, pos=(0,0), action='idle', flip=False, size=(8, 15)):
+        def __init__(self, game, pid, pos=(0,0), action='idle', flip=False, size=(8, 15), weapon_id=1):
             self.game = game
             self.pid = pid
             self.pos = list(pos)
@@ -462,7 +462,13 @@ class RemotePlayerRenderer:
             self.flip = flip
             self.smoothing_speed = 12 # Vitesse de lissage
             self.air_time = 0 # Pour le weapon check
-            self.weapon = Weapon(self)
+            self.weapon_id = weapon_id
+            self.weapon_map = {1: 'slashTriangle', 2: 'mace1', 3: 'mace'}
+            
+            # Initialise l'arme correcte
+            w_type = self.weapon_map.get(weapon_id, 'mace')
+            self.weapon = Weapon(self, w_type)
+            
             self.set_action(action)
 
         def rect(self):
@@ -486,9 +492,15 @@ class RemotePlayerRenderer:
             else:
                  self.air_time = 0
 
-        def update(self, pos, action, flip, dt=1):
+        def update(self, pos, action, flip, dt=1, weapon_id=1):
             self.target_pos = list(pos) # On met à jour la cible, pas la position directe
             self.flip = flip
+            
+            # Weapon Sync
+            if weapon_id != self.weapon_id:
+                self.weapon_id = weapon_id
+                w_type = self.weapon_map.get(weapon_id, 'mace')
+                self.weapon.set_weapon(w_type)
             
             # LERP (Linear Interpolation)
             self.pos[0] += (self.target_pos[0] - self.pos[0]) * self.smoothing_speed * dt
@@ -518,7 +530,7 @@ class RemotePlayerRenderer:
             if pid == self.game.net.id:
                 continue
 
-            x, y, action, flip = data
+            x, y, action, flip, weapon_id = data
 
             #self.game.tilemap.grass_manager.apply_force((x, y), 4, 8)
             # On veut la force au centre des pieds, pas en haut à gauche
@@ -527,9 +539,9 @@ class RemotePlayerRenderer:
             self.game.tilemap.grass_manager.apply_force(force_pos, 4, 8)
 
             if pid not in self.players:
-                self.players[pid] = self.RemotePlayer(self.game, pid, (x,y), action, flip)
+                self.players[pid] = self.RemotePlayer(self.game, pid, (x,y), action, flip, weapon_id=weapon_id)
 
-            self.players[pid].update((x,y), action, flip, dt)
+            self.players[pid].update((x,y), action, flip, dt, weapon_id=weapon_id)
             self.players[pid].render(surf, offset)
 
 

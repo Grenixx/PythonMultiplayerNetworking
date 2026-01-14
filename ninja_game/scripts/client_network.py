@@ -76,13 +76,14 @@ class ClientNetwork:
                     new_remote_players = {}
 
                     for _ in range(count):
-                        if len(data) >= offset + 28:
+                        if len(data) >= offset + 29:
                             pid = struct.unpack("I", data[offset:offset+4])[0]
                             x, y = struct.unpack("ff", data[offset+4:offset+12])
                             action = data[offset+12:offset+27].decode('utf-8').rstrip('\x00')
                             flip = data[offset+27] == 1
-                            new_remote_players[pid] = (x, y, action, flip)
-                            offset += 28
+                            weapon_id = data[offset+28]
+                            new_remote_players[pid] = (x, y, action, flip, weapon_id)
+                            offset += 29
                         else:
                             break
                     self.remote_players = new_remote_players
@@ -117,9 +118,9 @@ class ClientNetwork:
             time.sleep(0.01)
 
 
-    def send_state(self, x, y, action, flip):
+    def send_state(self, x, y, action, flip, weapon_id):
         try:
-            packet = b'\x00' + struct.pack("ffBB", x, y, action, flip)
+            packet = b'\x00' + struct.pack("ffBBB", x, y, action, flip, weapon_id)
             self.sock.sendto(packet, self.server)
         except Exception as e:
             print("Send error:", e)
