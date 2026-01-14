@@ -36,7 +36,7 @@ class Tilemap:
         self.tilemap = {}
         self.offgrid_tiles = []
 
-        # 🌿 AJOUT — gestionnaire d’herbe
+        #gestionnaire d’herbe héhé
         self.grass_manager = GrassManager(resource_path("data/images/grass"),
                                         tile_size=self.tile_size,
                                         shade_amount=120,
