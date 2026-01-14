@@ -295,24 +295,25 @@ class Game:
             #                self.sparks.append(Spark(self.player.rect().center, angle, 2 + random.random()))
             #                self.particles.append(Particle(self, 'particle', self.player.rect().center, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
                         
+            # --- REMOTE PLAYERS ---
+            self.remote_players_renderer.render(self.display, offset=render_scroll, dt=dt)
+
+            self.display_2.blit(self.display, (0, 0))
+
+            # --- VFX (Drawing on display_2 for additive glow visibility) ---
             for spark in self.sparks.copy():
                 kill = spark.update()
-                spark.render(self.display, offset=render_scroll)
+                spark.render(self.display_2, offset=render_scroll)
                 if kill:
                     self.sparks.remove(spark)
 
             for particle in self.particles.copy():
                 kill = particle.update()
-                particle.render(self.display, offset=render_scroll)
+                particle.render(self.display_2, offset=render_scroll)
                 if particle.type == 'leaf':
                     particle.pos[0] += math.sin(pygame.time.get_ticks() * 0.035) * 0.3
                 if kill:
                     self.particles.remove(particle)
-
-            # --- REMOTE PLAYERS ---
-            self.remote_players_renderer.render(self.display, offset=render_scroll, dt=dt)
-
-            self.display_2.blit(self.display, (0, 0))
 
             for event in pygame.event.get():
                 # Si l'utilisateur ferme la fenêtre
