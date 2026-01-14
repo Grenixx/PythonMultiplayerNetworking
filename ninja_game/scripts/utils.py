@@ -15,11 +15,15 @@ def load_image(path, convert_alpha=False):
     """path doit être relatif à BASE_IMG_PATH"""
     full_path = resource_path(os.path.join(BASE_IMG_PATH, path))
     img = pygame.image.load(full_path)
+    
+    # On force le colorkey noir AVANT le convert_alpha pour les masques
+    img.set_colorkey((0, 0, 0))
+    
     if convert_alpha:
         img = img.convert_alpha()
     else:
         img = img.convert()
-    img.set_colorkey((0, 0, 0))
+        
     return img
 
 

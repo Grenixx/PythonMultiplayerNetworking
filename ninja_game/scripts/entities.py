@@ -109,7 +109,7 @@ class PhysicsEntity:
             pygame.draw.rect(surf, (0, 255, 255), (rect.x - offset[0], rect.y - offset[1], rect.width, rect.height), 1)
             
             # 2. Body Mask (Semi-transparent Magenta)
-            mask_surf = self.mask.to_surface(setcolor=(255, 0, 255, 100), unsetcolor=(0, 0, 0, 0))
+            mask_surf = self.mask.to_surface(setcolor=(255, 0, 255, 100), unsetcolor=(0, 0, 0, 0)).convert_alpha()
             surf.blit(mask_surf, render_pos)
 
 
@@ -353,7 +353,8 @@ class PurpleCircle:
 
             
             enemy_img = anim.img()
-            enemy_rect = enemy_img.get_rect(center=(ex, ey))
+            # On utilise (8, 15) par défaut pour les patrouilles (comme le joueur)
+            enemy_rect = pygame.Rect(ex, ey, 8, 15)
             
             player_rect = self.game.player.rect()
             
@@ -375,26 +376,20 @@ class PurpleCircle:
                         self.game.dead += dt * 60
 
 
-        # Si aucune action offensive n'est en cours, on ne fait rien.
-        if not is_attacking:
-            return
-            
-        to_remove = []
+        # Loop pour les collisions d'arme et de debug
         current_weapon = player.weapon.weapon_equiped
         weapon_hitbox = current_weapon.current_rect
+        to_remove = []
 
-        
         for eid, (ex, ey, flip, state) in list(self.game.net.enemies.items()):
-            # On récupère l'animation spécifique (supposée déjà init par le set_state plus haut)
             if eid not in self.enemy_anims: continue
             anim = self.enemy_anims[eid]
             enemy_img = anim.img()
+            # On utilise (8, 15) pour être cohérent avec l'affichage top-left
+            enemy_rect = pygame.Rect(ex, ey, 8, 15)
             
-            enemy_rect = enemy_img.get_rect(center=(ex, ey))
-            
-            # L'arme en mouvement touche l'ennemi
-            hit_by_weapon = is_attacking and weapon_hitbox.colliderect(enemy_rect)
-            if hit_by_weapon:
+            # Check for overlap (even if not attacking, for debug visibility)
+            if weapon_hitbox.colliderect(enemy_rect):
                 if enemy_img not in self.enemy_masks:
                      self.enemy_masks[enemy_img] = pygame.mask.from_surface(enemy_img)
                 enemy_mask = self.enemy_masks[enemy_img]
@@ -404,23 +399,25 @@ class PurpleCircle:
 
                 overlap_point = current_weapon.weapon_mask.overlap(enemy_mask, (offset_x, offset_y))
                 if overlap_point:
-                    current_weapon.is_hitting = True
-                    hit_pos = (weapon_hitbox.x + overlap_point[0], weapon_hitbox.y + overlap_point[1])
-                    
-                    # Store intersection mask for debug
-                    if current_weapon.debug:
+                    # Store intersection mask for debug (Only if attacking, to avoid permanent display)
+                    if current_weapon.debug and is_attacking:
                         overlap_mask = current_weapon.weapon_mask.overlap_mask(enemy_mask, (offset_x, offset_y))
                         if overlap_mask:
-                            hit_surf = overlap_mask.to_surface(setcolor=(0, 255, 0, 255), unsetcolor=(0,0,0,0))
+                            # Bright Red for collisions
+                            hit_surf = overlap_mask.to_surface(setcolor=(255, 0, 0, 255), unsetcolor=(0,0,0,0)).convert_alpha()
                             self.game.hit_visuals.append((weapon_hitbox.topleft, hit_surf))
+                            current_weapon.is_hitting = True
 
-                    for i in range(30):
-                        angle = random.random() * math.pi * 2
-                        speed = random.random() * 5
-                        self.game.sparks.append(Spark(hit_pos, angle, 2 + random.random()))
-                        self.game.particles.append(Particle(self.game, 'particle', hit_pos, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
-                    
-                    to_remove.append(eid)
+                    # Logic: only kill if attacking
+                    if is_attacking:
+                        hit_pos = (weapon_hitbox.x + overlap_point[0], weapon_hitbox.y + overlap_point[1])
+                        for i in range(30):
+                            angle = random.random() * math.pi * 2
+                            speed = random.random() * 5
+                            self.game.sparks.append(Spark(hit_pos, angle, 2 + random.random()))
+                            self.game.particles.append(Particle(self.game, 'particle', hit_pos, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
+                        
+                        to_remove.append(eid)
 
         for eid in to_remove:
             # Supprime localement pour effet instantané
@@ -452,9 +449,10 @@ class PurpleCircle:
             if imgAnim not in self.enemy_masks:
                  self.enemy_masks[imgAnim] = pygame.mask.from_surface(imgAnim)
             
-            # Ajustement pour être au centre (car x, y sont le centre)
-            ex_topleft = x - offset[0] - 8
-            ey_topleft = y - offset[1] - 8
+            # Alignement consistant avec le joueur (Top-left + Offset)
+            anim_offset = (-3, -3)
+            ex_topleft = x - offset[0] + anim_offset[0]
+            ey_topleft = y - offset[1] + anim_offset[1]
 
             # Rendu Principal avec Flip
             surf.blit(pygame.transform.flip(imgAnim, flip, False), (ex_topleft, ey_topleft))
@@ -467,14 +465,15 @@ class PurpleCircle:
 
                 # 2. Draw Enemy Full Mask (Semi-transparent Blue)
                 enemy_mask = anim.mask(flip=flip)
-                mask_surf = enemy_mask.to_surface(setcolor=(0, 100, 255, 100), unsetcolor=(0, 0, 0, 0))
+                mask_surf = enemy_mask.to_surface(setcolor=(0, 100, 255, 130), unsetcolor=(0, 0, 0, 0)).convert_alpha()
                 surf.blit(mask_surf, (ex_topleft, ey_topleft))
 
-                # 3. Draw Intersection (stored in hit_visuals as solid Green)
-                for hit_pos, hit_surf in self.game.hit_visuals:
-                    surf.blit(hit_surf, (hit_pos[0] - offset[0], hit_pos[1] - offset[1]))
-            
             self.game.tilemap.grass_manager.apply_force((x, y), 6, 12)
+
+        # 3. Draw Intersections (AFTER all sprites to be on top)
+        if self.game.player.weapon.weapon_equiped.debug:
+            for hit_pos, hit_surf in self.game.hit_visuals:
+                surf.blit(hit_surf, (hit_pos[0] - offset[0], hit_pos[1] - offset[1]))
             
             
             

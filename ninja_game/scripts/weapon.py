@@ -219,13 +219,13 @@ class WeaponBase:
             # 1. Draw AABB (Cyan)
             pygame.draw.rect(surf, (0, 255, 255), (render_pos[0], render_pos[1], rect.width, rect.height), 1)
 
-            # 2. Draw Full Mask (Semi-transparent Red/Green)
-            color = (255, 0, 0, 100) if self.is_hitting else (0, 255, 0, 100)
-            mask_surf = mask.to_surface(setcolor=color, unsetcolor=(0,0,0,0))
+            # 2. Draw Full Mask (Semi-transparent White/Red for better contrast)
+            mask_color = (255, 0, 0, 150) if self.is_hitting else (255, 255, 255, 80)
+            mask_surf = mask.to_surface(setcolor=mask_color, unsetcolor=(0,0,0,0)).convert_alpha()
             surf.blit(mask_surf, render_pos)
 
-            # 3. Draw Outline (Solid color)
+            # 3. Draw Outline (Solid color: Red if hitting, White if idle)
             if outline and len(outline) > 1:
-                color_solid = (255, 0, 0) if self.is_hitting else (0, 255, 0)
+                color_solid = (255, 0, 0) if self.is_hitting else (255, 255, 255)
                 adjusted_points = [(p[0] + render_pos[0], p[1] + render_pos[1]) for p in outline]
                 pygame.draw.lines(surf, color_solid, True, adjusted_points, 2)
