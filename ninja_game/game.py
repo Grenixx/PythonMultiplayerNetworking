@@ -165,8 +165,8 @@ class Game:
         for tree in self.tilemap.extract([('large_decor', 2)], keep=True):
             self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))
             
-        # Plus besoin de charger les ennemis localement - ils sont gérés par le serveur
-        for spawner in self.tilemap.extract([('spawners', 0), ('spawners', 1)]):
+        #ca les prend puis supr donc on doit rajouter TOUT les spawner pour eviter de les blit comme des decors
+        for spawner in self.tilemap.extract([('spawners', 0), ('spawners', 1), ('spawners', 2)]):
             if spawner['variant'] == 0:
                 self.player.pos = spawner['pos']
                 self.player.air_time = 0

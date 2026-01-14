@@ -21,6 +21,9 @@ class EnemyManager:
             if spawner['variant'] == 1: # Enemy spawner
                 self.create_enemy(spawner['pos'], "patrol")
 
+            if spawner['variant'] == 2: # BOSS spawner
+                self.create_enemy(spawner['pos'], "patrol") # a cahnger pour le boss
+
     def create_enemy(self, pos: list, enemy_type: str) -> None:
         """Creates an enemy at 'pos' with the type 'enemy_type'"""
         enemy_types = {"blob": Blob, "patrol": Patrol}

@@ -5,6 +5,8 @@ import pygame
 from scripts.utils import load_images
 from scripts.tilemap import Tilemap
 
+import os
+
 RENDER_SCALE = 2.0
 
 class Editor:
@@ -139,8 +141,10 @@ class Editor:
                         self.tilemap.autotile()
                     if event.key == pygame.K_o:
                         self.tilemap.save('map.json')
-                        self.tilemap.save('data/maps/map.json')
-                        self.tilemap.save('../ninja_game_server/data/maps/map.json')
+                        nbrDeMap = os.listdir('data/maps/')
+                        nbrDeMap = len(nbrDeMap) # ca fait direct +1 vu que obn commence a 0
+                        self.tilemap.save(f'data/maps/{nbrDeMap}.json')
+                        self.tilemap.save(f'../ninja_game_server/data/maps/{nbrDeMap}.json')
                         print('Map saved to map.json')
                     if event.key == pygame.K_LSHIFT:
                         self.shift = True

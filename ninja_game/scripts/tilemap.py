@@ -1,8 +1,7 @@
 import json
 import random
 import pygame
-from scripts.grass import GrassManager   # 🌿 AJOUT — pour gérer l'herbe
-
+from scripts.grass import GrassManager  
 import sys, os
 
 def resource_path(relative_path):
@@ -153,5 +152,5 @@ class Tilemap:
                               (tile['pos'][0] * self.tile_size - offset[0],
                                tile['pos'][1] * self.tile_size - offset[1]))
 
-        # 🌿 AJOUT — rendu de l’herbe par-dessus le sol
+        #rendu de l’herbe par-dessus le sol
         self.grass_manager.update_render(surf, dt=dt, offset=offset)
