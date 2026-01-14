@@ -414,14 +414,21 @@ class Game:
 
             self.controller.update() # Pour la manette
             if self.controller.joystick:  # Si une manette est connectée
-                # --- SAUT ---
-                if self.controller.button_a:
+                # --- SAUT (Press simple / Latch) ---
+                if self.controller.button_a and not getattr(self, '_ctrl_jump_pressed', False):
+                    self._ctrl_jump_pressed = True
                     if self.player.request_jump():
                         self.sfx['jump'].play()
+                elif not self.controller.button_a:
+                    self._ctrl_jump_pressed = False
                 
-                # --- DASH ---
-                if self.controller.button_b or self.controller.left_trigger > 0.3 or self.controller.right_trigger > 0.3:
+                # --- DASH (Press simple / Latch) ---
+                dash_input = self.controller.button_b or self.controller.left_trigger > 0.3 or self.controller.right_trigger > 0.3
+                if dash_input and not getattr(self, '_ctrl_dash_pressed', False):
+                    self._ctrl_dash_pressed = True
                     self.player.dash()
+                elif not dash_input:
+                    self._ctrl_dash_pressed = False
 
                 # --- MOUVEMENT ---
                 move_x = 0
