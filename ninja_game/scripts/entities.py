@@ -389,12 +389,14 @@ class PurpleCircle:
                 offset_x = enemy_rect.x - weapon_hitbox.x
                 offset_y = enemy_rect.y - weapon_hitbox.y
 
-                if current_weapon.weapon_mask.overlap(enemy_mask, (offset_x, offset_y)):
+                overlap_point = current_weapon.weapon_mask.overlap(enemy_mask, (offset_x, offset_y))
+                if overlap_point:
+                    hit_pos = (weapon_hitbox.x + overlap_point[0], weapon_hitbox.y + overlap_point[1])
                     for i in range(30):
                         angle = random.random() * math.pi * 2
                         speed = random.random() * 5
-                        self.game.sparks.append(Spark(enemy_rect.center, angle, 2 + random.random()))
-                        self.game.particles.append(Particle(self.game, 'particle', enemy_rect.center, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
+                        self.game.sparks.append(Spark(hit_pos, angle, 2 + random.random()))
+                        self.game.particles.append(Particle(self.game, 'particle', hit_pos, velocity=[math.cos(angle + math.pi) * speed * 0.5, math.sin(angle + math.pi) * speed * 0.5], frame=random.randint(0, 7)))
                     
                     to_remove.append(eid)
 
