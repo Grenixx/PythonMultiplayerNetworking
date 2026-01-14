@@ -457,8 +457,10 @@ class RemotePlayerRenderer:
             self.game = game
             self.pid = pid
             self.pos = list(pos)
+            self.target_pos = list(pos) # Position cible pour le smoothing
             self.size = size
             self.flip = flip
+            self.smoothing_speed = 12 # Vitesse de lissage
             self.air_time = 0 # Pour le weapon check
             self.weapon = Weapon(self)
             self.set_action(action)
@@ -485,8 +487,13 @@ class RemotePlayerRenderer:
                  self.air_time = 0
 
         def update(self, pos, action, flip, dt=1):
-            self.pos = list(pos)
+            self.target_pos = list(pos) # On met à jour la cible, pas la position directe
             self.flip = flip
+            
+            # LERP (Linear Interpolation)
+            self.pos[0] += (self.target_pos[0] - self.pos[0]) * self.smoothing_speed * dt
+            self.pos[1] += (self.target_pos[1] - self.pos[1]) * self.smoothing_speed * dt
+            
             self.set_action(action)
             self.animation.update(dt)
             self.weapon.update(dt)
