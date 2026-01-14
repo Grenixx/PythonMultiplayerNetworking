@@ -285,8 +285,14 @@ class Player(PhysicsEntity):
             attack_direction = 'front' # Direction par défaut
 
             # Priorité 1 : Attaque vers le haut si la touche 'haut' est pressée.
-            if direction in ['up', 'down']:
-                attack_direction = direction
+            if direction == 'up':
+                attack_direction = 'up'
+            elif direction == 'down':
+                 if self.air_time > 0.09:
+                    attack_direction = 'down'
+                 else:
+                    attack_direction = 'front'
+
             
             # --- CORRECTION ---
             # On met à jour l'orientation du joueur si l'attaque est latérale
@@ -296,8 +302,8 @@ class Player(PhysicsEntity):
 
             # Par défaut (aucune touche directionnelle prioritaire), on fait une attaque frontale.
             self.set_action('attack_' + attack_direction)
-            # On déclenche l'animation de l'arme
-            self.weapon.weapon_equiped.swing(direction)
+            # On déclenche l'animation de l'arme (qui a sa propre logique de direction, mais on lui mâche le travail)
+            self.weapon.weapon_equiped.swing(attack_direction)
 
 
 
