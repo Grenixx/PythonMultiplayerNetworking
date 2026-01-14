@@ -412,25 +412,63 @@ class Game:
 
                         self.player.attack(direction)
 
-            self.controller.update() #Pour la mannette
+            self.controller.update() # Pour la manette
             if self.controller.joystick:  # Si une manette est connectée
+                # --- SAUT ---
                 if self.controller.button_a:
-                    if self.player.jump():
+                    if self.player.request_jump():
                         self.sfx['jump'].play()
-                if self.controller.button_b:
+                
+                # --- DASH ---
+                if self.controller.button_b or self.controller.left_trigger > 0.3 or self.controller.right_trigger > 0.3:
                     self.player.dash()
 
+                # --- MOUVEMENT ---
                 move_x = 0
-                if self.controller.left_stick_x < -0.5 or self.controller.dpad_left:
+                if self.controller.left_stick_x < -0.4 or self.controller.dpad_left:
                     move_x = -1
-                elif self.controller.left_stick_x > 0.5 or self.controller.dpad_right:
+                elif self.controller.left_stick_x > 0.4 or self.controller.dpad_right:
                     move_x = 1
                 self.movement = [move_x < 0, move_x > 0]
 
-                if self.controller.left_trigger > 0.2:
-                    self.player.dash()
-                if self.controller.right_trigger > 0.2:
-                    self.player.dash()
+                # --- ATTAQUE (Press simple) ---
+                if self.controller.button_x and not getattr(self, '_ctrl_attack_pressed', False):
+                    self._ctrl_attack_pressed = True
+                    attack_dir = None
+                    if self.controller.left_stick_y < -0.5 or self.controller.dpad_up:
+                        attack_dir = 'up'
+                    elif self.controller.left_stick_y > 0.5 or self.controller.dpad_down:
+                        attack_dir = 'down'
+                    elif self.controller.left_stick_x < -0.5 or self.controller.dpad_left:
+                        attack_dir = 'left'
+                    elif self.controller.left_stick_x > 0.5 or self.controller.dpad_right:
+                        attack_dir = 'right'
+                    self.player.attack(attack_dir)
+                elif not self.controller.button_x:
+                    self._ctrl_attack_pressed = False
+
+                # --- CHANGEMENT D'ARME (Press simple) ---
+                if (self.controller.button_y or self.controller.button_rb) and not getattr(self, '_ctrl_weapon_pressed', False):
+                    self._ctrl_weapon_pressed = True
+                    self.currentWeaponIndex = (self.currentWeaponIndex % len(self.weaponDictionary)) + 1
+                    self.weapon_type = self.weaponDictionary[self.currentWeaponIndex]
+                    self.player.weapon.set_weapon(self.weapon_type)
+                elif not (self.controller.button_y or self.controller.button_rb):
+                    self._ctrl_weapon_pressed = False
+
+                # --- CHANGEMENT DE NIVEAU / DEBUG (Press simple) ---
+                if self.controller.button_start and not getattr(self, '_ctrl_start_pressed', False):
+                    self._ctrl_start_pressed = True
+                    self.net.send_map_change_request()
+                elif not self.controller.button_start:
+                    self._ctrl_start_pressed = False
+
+                if self.controller.button_back and not getattr(self, '_ctrl_back_pressed', False):
+                    self._ctrl_back_pressed = True
+                    self.player.weapon.weapon_equiped.toggle_debug()
+                    self.debug = not self.debug
+                elif not self.controller.button_back:
+                    self._ctrl_back_pressed = False
 
             if self.transition != 0:
                 transition_surf = pygame.Surface(self.display.get_size())

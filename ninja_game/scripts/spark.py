@@ -21,7 +21,7 @@ class Spark:
         """
         # 1. Dessin de la lueur (Glow)
         # On crée une petite surface pour la lueur additive
-         #glow_size = int(self.speed * 8)
+        #glow_size = int(self.speed * 8)
         #if glow_size > 0:
         #    glow_surf = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
             # Couleur lueur (orange/jaune pâle)
