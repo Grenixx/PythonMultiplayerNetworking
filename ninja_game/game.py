@@ -430,12 +430,26 @@ class Game:
                 elif not dash_input:
                     self._ctrl_dash_pressed = False
 
-                # --- MOUVEMENT ---
+                # --- MOUVEMENT & DIRECTIONS ---
                 move_x = 0
-                if self.controller.left_stick_x < -0.4 or self.controller.dpad_left:
+                self.player.is_pressed = None # Reset par défaut
+
+                # Stick Gauche
+                ls_x = self.controller.left_stick_x
+                ls_y = self.controller.left_stick_y
+
+                if ls_x < -0.4 or self.controller.dpad_left:
                     move_x = -1
-                elif self.controller.left_stick_x > 0.4 or self.controller.dpad_right:
+                    self.player.is_pressed = 'left'
+                elif ls_x > 0.4 or self.controller.dpad_right:
                     move_x = 1
+                    self.player.is_pressed = 'right'
+                
+                if ls_y < -0.5 or self.controller.dpad_up:
+                    self.player.is_pressed = 'up'
+                elif ls_y > 0.5 or self.controller.dpad_down:
+                    self.player.is_pressed = 'down'
+
                 self.movement = [move_x < 0, move_x > 0]
 
                 # --- ATTAQUE (Press simple) ---

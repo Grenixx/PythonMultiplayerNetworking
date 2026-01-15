@@ -143,6 +143,7 @@ class Player(PhysicsEntity):
         self.dash_speed = 330      # Ajusté
         self.dash_cooldown = 0.4   # secondes
         self.dash_invisible_duration = 0.1 
+        self.dash_dir = None # Direction du dash actuel ('down' ou None)
 
     def update(self, tilemap, movement=(0, 0), dt=0):
         super().update(tilemap, movement=movement, dt=dt) 
@@ -200,12 +201,24 @@ class Player(PhysicsEntity):
             
         if self.dashing != 0:
             dash_progress = abs(self.dashing) / self.dash_duration
+            
             # Vitesse du dash
-            self.velocity[0] = self.dash_speed if self.dashing > 0 else -self.dash_speed
+            if self.dash_dir == 'down':
+                self.velocity[1] = self.dash_speed
+                self.velocity[0] = 0
+            else:
+                self.velocity[0] = self.dash_speed if self.dashing > 0 else -self.dash_speed
             
             # Fin du dash : On décélère
             if dash_progress < 0.2:
-                self.velocity[0] *= dash_progress * 5
+                if self.dash_dir == 'down':
+                    self.velocity[1] *= dash_progress * 5
+                else:
+                    self.velocity[0] *= dash_progress * 5
+            
+            # Reset direction en fin de dash
+            if abs(self.dashing) < dt:
+                self.dash_dir = None
                 
                 # Résistance de l'air (décélération horizontale)
         if self.velocity[0] > 0:
@@ -260,15 +273,27 @@ class Player(PhysicsEntity):
             self.game.sfx['dash'].play()
             
             # Burst unique d'étincelles au début
-            # On définit la direction du burst
-            direction = -1 if self.flip else 1
-            spark_angle = math.pi if direction > 0 else 0
-            
-            for i in range(15): # Nombre d'étincelles augmenté pour l'impact unique
-                angle = spark_angle + (random.random() - 0.5) * 1.5 # Cone large
+            if self.is_pressed == 'down':
+                # Dash vers le bas
+                self.dash_dir = 'down'
+                spark_angle = -math.pi / 2 # Tirer vers le HAUT
+                angle_width = 1.5
+                offset_y = -10
+                offset_x = 0
+            else:
+                # Dash horizontal
+                self.dash_dir = None
+                direction = -1 if self.flip else 1
+                spark_angle = math.pi if direction > 0 else 0
+                angle_width = 1.5
+                offset_y = random.randint(-2, 2)
+                offset_x = -5 if direction > 0 else 5
+
+            for i in range(15):
+                angle = spark_angle + (random.random() - 0.5) * angle_width
                 spawn_pos = list(self.rect().center)
-                spawn_pos[0] += -5 if direction > 0 else 5
-                spawn_pos[1] += random.randint(-2, 2)
+                spawn_pos[0] += offset_x
+                spawn_pos[1] += offset_y
                 self.game.sparks.append(Spark(spawn_pos, angle, 2 + random.random() * 1.5))
 
             if self.flip:
