@@ -147,16 +147,22 @@ class Player(PhysicsEntity):
         self.dash_cooldown = 0.4   # secondes
         self.dash_invisible_duration = 0.1 
         self.dash_dir = None # Direction du dash actuel ('down' ou None)
+        self.dash_cooldown_timer = 0 # Cooldown entre deux dashs
 
     def update(self, tilemap, movement=(0, 0), dt=0):
-        super().update(tilemap, movement=movement, dt=dt) 
+        # On ignore le mouvement normal si on est en train de dasher
+        # pour éviter d'additionner run_speed (120) + dash_speed (330)
+        actual_movement = (0, 0) if self.dashing != 0 else movement
+        
+        was_dashing = self.dashing != 0
+        super().update(tilemap, movement=actual_movement, dt=dt) 
 
         if self.collisions['down']:
             self.air_time = 0
         else:
             self.air_time += dt  # dt est en secondes
 
-        
+        self.dash_cooldown_timer = max(0, self.dash_cooldown_timer - dt)
         self.weapon.weapon_equiped.update(dt)
         self.jump_buffer_timer = max(0, self.jump_buffer_timer - dt)
 
@@ -189,7 +195,7 @@ class Player(PhysicsEntity):
         if not self.wall_slide and not self.action.startswith('attack'):
             if self.air_time > 0.1:
                 self.set_action('jump')
-            elif movement[0] != 0:
+            elif actual_movement[0] != 0:
                 self.set_action('run')
             else:
                 self.set_action('idle')
@@ -218,10 +224,15 @@ class Player(PhysicsEntity):
                     self.velocity[1] *= dash_progress * 5
                 else:
                     self.velocity[0] *= dash_progress * 5
-            
-            # Reset direction en fin de dash
-            if abs(self.dashing) < dt:
-                self.dash_dir = None
+        
+        # TRANSITION FIN DE DASH (Momentum kill)
+        if was_dashing and self.dashing == 0:
+            if self.dash_dir == 'down':
+                self.velocity[1] = 0
+            else:
+                self.velocity[0] *= 0.2 # On casse l'inertie violemment
+            self.dash_dir = None
+            self.dash_cooldown_timer = self.dash_cooldown
                 
                 # Résistance de l'air (décélération horizontale)
         if self.velocity[0] > 0:
@@ -272,7 +283,7 @@ class Player(PhysicsEntity):
         return False
 
     def dash(self):
-        if not self.dashing:
+        if not self.dashing and self.dash_cooldown_timer <= 0:
             self.game.sfx['dash'].play()
             
             # Burst unique d'étincelles au début
