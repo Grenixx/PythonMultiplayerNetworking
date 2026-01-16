@@ -388,9 +388,9 @@ class Game:
                 def execute_attack(self):
                     direction = None
                     keys = pygame.key.get_pressed()
-                    if keys[pygame.K_UP] or keys[pygame.K_w]: direction = 'up'
+                    if keys[pygame.K_UP] or keys[pygame.K_z]: direction = 'up'
                     elif keys[pygame.K_DOWN] or keys[pygame.K_s]: direction = 'down'
-                    elif keys[pygame.K_LEFT] or keys[pygame.K_a]: direction = 'left'
+                    elif keys[pygame.K_LEFT] or keys[pygame.K_q]: direction = 'left'
                     elif keys[pygame.K_RIGHT] or keys[pygame.K_d]: direction = 'right'
                     self.player.attack(direction)
                 # Si un bouton de la souris est pressé

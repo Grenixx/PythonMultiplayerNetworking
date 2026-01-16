@@ -44,7 +44,7 @@ void main() {
   //vec2 uv_center = screenUv - 0.5;
   vec2 uv_center = screenUv -0.5;
 
-  uv_center.x *= u_resolution.x / u_resolution.y;
+  uv_center.x *= u_resolution.x / u_resolution. y;
   float dist = length(uv_center);
 
   // Paramètres de la transition
