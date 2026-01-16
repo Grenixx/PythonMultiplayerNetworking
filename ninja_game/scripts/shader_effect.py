@@ -51,14 +51,30 @@ class ShaderEffect:
         
         # Texture pour l'entrée
         self.texture = None
+        self.trigger_time = -10.0
+        self.trigger_pos = (0.5, 0.5)
+
+    def trigger(self, pos=(0.5, 0.5), current_time=None):
+        """Déclenche l'effet à une position spécifique (UV: 0.0 à 1.0)."""
+        if current_time is None:
+            self.trigger_time = time.time() - self.start_time
+        else:
+            self.trigger_time = current_time
+        self.trigger_pos = pos
 
     def render(self, surface, current_time=None):
         """Applique le shader sur la surface donnée."""
         if current_time is None:
             current_time = time.time() - self.start_time
             
-        # On s'assure que le contexte est bien celui-ci (utile si on partage)
+        # On s'assure que le contexte est bien celui-ci
         self.fbo.use()
+        
+        # Mise à jour des uniforms spécifiques
+        if "u_trigger_time" in self.prog:
+            self.prog["u_trigger_time"] = self.trigger_time
+        if "u_pos" in self.prog:
+            self.prog["u_pos"] = self.trigger_pos
 
         # Mise à jour de la texture d'entrée
         # True pour le flip vertical car ModernGL a (0,0) en bas à gauche

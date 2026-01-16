@@ -2,6 +2,7 @@ import os
 import sys
 import math
 import random
+import time
 import moderngl
 
 import pygame
@@ -136,13 +137,13 @@ class Game:
         self.ctx = moderngl.create_standalone_context()
         self.shader_bg = ShaderBackground(SCALE[0], SCALE[1], "data/shaders/3.9transiIN.frag", ctx=self.ctx)
         self.scream_shader = ShaderEffect(SCALE[0], SCALE[1], "data/shaders/4.0.frag", ctx=self.ctx)
-        self.scream_active = True
+        self.scream_active = False # Désactivé par défaut, on le déclenche sur commande
 
         self.controller = Controller()
 
         self.lighting = LightingSystem(self.display.get_size())
 
-        self.weapon_type = 'mace' # On commence avec la lance
+        self.weapon_type = 'mace' # On commence avec la masse
         self.weaponDictionary = {1: 'slashTriangle', 2: 'mace1', 3: 'mace'}
         self.currentWeaponIndex = 1
 
@@ -373,8 +374,15 @@ class Game:
                         self.player.weapon.set_weapon(self.weapon_type)
                     if event.key == pygame.K_n:
                         self.net.send_map_change_request()
-                    if event.key == pygame.K_h:
-                        self.scream_active = not self.scream_active
+                    if event.key == pygame.K_j:
+                        # Déclenche l'effet à la position du joueur
+                        # On convertit les coordonnées écran en 0.0-1.0 (UV)
+                        p_pos = (self.player.rect().center)
+                        uv_x = (p_pos[0] - render_scroll[0]) / self.display.get_width()
+                        uv_y = (p_pos[1] - render_scroll[1]) / self.display.get_height()
+                        # ModernGL a Y inversé par rapport à Pygame pour les textures
+                        self.scream_shader.trigger((uv_x, 1.0 - uv_y))
+                        self.scream_active = True
 
                     # Zoom dezoom :D
                     if event.key == pygame.K_KP_PLUS or event.key == pygame.K_PLUS:
@@ -531,6 +539,10 @@ class Game:
             if self.scream_active:
                 scream_surf = self.scream_shader.render(self.display_2)
                 self.display_2.blit(scream_surf, (0, 0))
+                
+                # On désactive l'effet après 1 seconde (durée fixée dans le shader) pour économiser des ressources si non utilisé
+                if time.time() - self.scream_shader.start_time - self.scream_shader.trigger_time > 1.2:
+                    self.scream_active = False
 
             # --- AFFICHAGE FINAL ---
             screenshake_offset = (
