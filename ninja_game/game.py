@@ -2,6 +2,7 @@ import os
 import sys
 import math
 import random
+import moderngl
 
 import pygame
 from screeninfo import get_monitors
@@ -18,6 +19,7 @@ from scripts.shader_bg import ShaderBackground
 from scripts.client_network import ClientNetwork
 from scripts.controller import Controller  
 from scripts.lighting import LightingSystem
+from scripts.shader_effect import ShaderEffect
 
 ###
 # TIPS POUR MOI MEME pour les bugg lier au mouvement peut etre pour etduidier le gresillement je peux retirer l offset de la camera pour voir si c est la cam 
@@ -131,7 +133,10 @@ class Game:
         self.net.connect()
         self.remote_players = {}
         
-        self.shader_bg = ShaderBackground(SCALE[0], SCALE[1], "data/shaders/3.9transiIN.frag")
+        self.ctx = moderngl.create_standalone_context()
+        self.shader_bg = ShaderBackground(SCALE[0], SCALE[1], "data/shaders/3.9transiIN.frag", ctx=self.ctx)
+        self.scream_shader = ShaderEffect(SCALE[0], SCALE[1], "data/shaders/4.0.frag", ctx=self.ctx)
+        self.scream_active = True
 
         self.controller = Controller()
 
@@ -155,6 +160,7 @@ class Game:
         self.display_2 = pygame.Surface(SCALE)
         
         self.shader_bg.resize(SCALE[0], SCALE[1])
+        self.scream_shader.resize(SCALE[0], SCALE[1])
 
         self.lighting.size = SCALE
 
@@ -224,6 +230,7 @@ class Game:
             self.remote_players = self.net.remote_players
 
             self.display.fill((0, 0, 0, 0))
+            self.display_2.fill((0, 0, 0))
             # --- BACKGROUND ---
             shader_surface = self.shader_bg.render(camera=(render_scroll[0] * 0.2, render_scroll[1] * -0.2))
             self.display_2.blit(shader_surface, (0, 0))
@@ -366,6 +373,8 @@ class Game:
                         self.player.weapon.set_weapon(self.weapon_type)
                     if event.key == pygame.K_n:
                         self.net.send_map_change_request()
+                    if event.key == pygame.K_h:
+                        self.scream_active = not self.scream_active
 
                     # Zoom dezoom :D
                     if event.key == pygame.K_KP_PLUS or event.key == pygame.K_PLUS:
@@ -518,6 +527,11 @@ class Game:
             ]
             self.lighting.render(self.display_2, light_sources, pygame.time.get_ticks())
             """
+            # --- POST-PROCESSING ---
+            if self.scream_active:
+                scream_surf = self.scream_shader.render(self.display_2)
+                self.display_2.blit(scream_surf, (0, 0))
+
             # --- AFFICHAGE FINAL ---
             screenshake_offset = (
                 random.random() * self.screenshake - self.screenshake / 2,
