@@ -1,6 +1,7 @@
 import os
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 import sys
+import subprocess
 import pygame
 from game import Game
 from scripts.lobby_discovery import LobbyManager
@@ -197,10 +198,34 @@ def open_server_browser():
     refresh_servers()
     set_active_menu(server_menu)
 
+def host_game():
+    """Lance le serveur en arrière-plan et rejoint la partie."""
+    print("Démarrage du serveur...")
+    
+    # Chemin vers server.py (relatif à menu.py qui est dans ninja_game/)
+    server_script = os.path.abspath(os.path.join(os.path.dirname(__file__), '../ninja_game_server/server.py'))
+    
+    try:
+        # Lance le serveur dans une nouvelle console (surtout utile sous Windows pour voir les logs)
+        if sys.platform == "win32":
+            subprocess.Popen([sys.executable, server_script], creationflags=subprocess.CREATE_NEW_CONSOLE)
+        else:
+            subprocess.Popen([sys.executable, server_script])
+            
+        # On attend un peu que le serveur démarre (optionnel, mais plus sûr)
+        import time
+        time.sleep(1)
+        
+        # On rejoint automatiquement en local
+        start_game("127.0.0.1")
+        
+    except Exception as e:
+        print(f"Erreur au lancement du serveur : {e}")
+
 # Menu vide pour l'instant, sera rempli par refresh_servers
 server_menu = Menu("Server Browser", [("Loading...", None), ("Back", lambda: set_active_menu(main_menu))], font)
 
-main_menu = Menu("Main Menu", [("START LOCAL", lambda: start_game("127.0.0.1")),("FIND GAME", open_server_browser),("OPTIONS", open_options),("QUIT GAME", quit_game),], font)
+main_menu = Menu("Main Menu", [("HOST GAME", host_game), ("FIND GAME", open_server_browser),("OPTIONS", open_options),("QUIT GAME", quit_game),], font)
 options_menu = Menu("Options", [("Audio",None),("Keyboards",lambda: set_active_menu(keyboard_menu)),("Graphics",lambda: set_active_menu(graphics_menu)),("FPS",lambda: set_active_menu(fps_menu)),("Back", lambda: set_active_menu(main_menu)),], font)
 keyboard_menu = Menu("Keyboard", [(f"Jump : {CONTROLS['JUMP']}",lambda: rebinding("JUMP")),(f"Change Arm : {CONTROLS['CHANGE ARM']}",lambda: rebinding("ATTACK")),(f"Dash : {CONTROLS['DASH']}",lambda: rebinding("DODGE")),(f"left : {CONTROLS['LEFT']}",lambda: rebinding("LEFT")),(f"Right : {CONTROLS['RIGHT']}",lambda: rebinding("RIGHT")),("Back", lambda: set_active_menu(options_menu))],font)
 graphics_menu = Menu("Graphics",[("3840-2160",lambda: resize(3840, 2160)),("2560-1440",lambda: resize(2560, 1440)),("1920-1080",lambda: resize(1920, 1080)),("1680-1050",lambda: resize(1680, 1050)),("1280-720",lambda: resize(1280,720)),("1024-768",lambda: resize(1024,768)),("800-600",lambda: resize(800,600)),("Back", lambda: set_active_menu(options_menu))],font)
