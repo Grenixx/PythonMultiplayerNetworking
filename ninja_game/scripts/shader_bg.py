@@ -52,9 +52,12 @@ class ShaderBackground:
         """Rend le shader avec un décalage de caméra."""
         self.fbo.use()
         self.fbo.clear()
-        self.prog["u_time"] = time.time() - self.start_time
-        self.prog["u_resolution"] = (self.width, self.height)
-        self.prog["u_camera"] = camera
+        if "u_time" in self.prog:
+            self.prog["u_time"] = time.time() - self.start_time
+        if "u_resolution" in self.prog:
+            self.prog["u_resolution"] = (self.width, self.height)
+        if "u_camera" in self.prog:
+            self.prog["u_camera"] = camera
 
         self.vao.render(moderngl.TRIANGLE_STRIP)
         data = self.fbo.read(components=3)

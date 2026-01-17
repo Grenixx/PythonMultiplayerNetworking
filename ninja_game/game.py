@@ -40,7 +40,7 @@ def resource_path(relative_path):
 
 
 class Game:
-    def __init__(self, max_fps=60, resolution : list = [0, 0]):
+    def __init__(self, max_fps=60, resolution : list = [0, 0], ip="127.0.0.1"):
         self.max_fps = max_fps
         pygame.init()
 
@@ -130,13 +130,14 @@ class Game:
         
         self.screenshake = 0
 
-        self.net = ClientNetwork("127.0.0.1", 5006)
+        self.net = ClientNetwork(ip, 5006)
         self.net.connect()
         self.remote_players = {}
         
         self.ctx = moderngl.create_standalone_context()
-        self.shader_bg = ShaderBackground(SCALE[0], SCALE[1], "data/shaders/3.9transiIN.frag", ctx=self.ctx)
+        self.shader_bg = ShaderBackground(SCALE[0], SCALE[1], "data/shaders/2.6.frag", ctx=self.ctx)
         self.scream_shader = ShaderEffect(SCALE[0], SCALE[1], "data/shaders/4.0.frag", ctx=self.ctx)
+        self.transition_shader = ShaderEffect(SCALE[0], SCALE[1], "data/shaders/3.9transiIN.frag", ctx=self.ctx)
         self.scream_active = False # Désactivé par défaut, on le déclenche sur commande
 
         self.controller = Controller()
@@ -162,6 +163,7 @@ class Game:
         
         self.shader_bg.resize(SCALE[0], SCALE[1])
         self.scream_shader.resize(SCALE[0], SCALE[1])
+        self.transition_shader.resize(SCALE[0], SCALE[1])
 
         self.lighting.size = SCALE
 
@@ -516,10 +518,17 @@ class Game:
                     self._ctrl_back_pressed = False
 
             if self.transition != 0:
-                transition_surf = pygame.Surface(self.display.get_size())
-                pygame.draw.circle(transition_surf, (255, 255, 255), (self.display.get_width() // 2, self.display.get_height() // 2), (30 - abs(self.transition)) * 8)
-                transition_surf.set_colorkey((255, 255, 255))
-                self.display_2.blit(transition_surf, (0, 0))
+                # Calcul du progrès (0.0 fermé, 1.0 ouvert)
+                progress = (30 - abs(self.transition)) / 30.0
+                
+                # Mise à jour des uniformes
+                self.transition_shader.prog["u_progress"] = progress
+                if "u_camera" in self.transition_shader.prog:
+                    self.transition_shader.prog["u_camera"] = (render_scroll[0] * 0.2, render_scroll[1] * -0.2)
+                
+                # Application du shader de transition sur display_2
+                trans_surf = self.transition_shader.render(self.display_2)
+                self.display_2.blit(trans_surf, (0, 0))
 
             
             #self.tilemap.grass_manager.update_render(self.display,1/60, offset=self.scroll)

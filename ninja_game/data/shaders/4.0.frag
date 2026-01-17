@@ -24,13 +24,13 @@ void main() {
     }
 
     // On crée 3 ondes décalées dans le temps
-    for (float i = 0.0; i < 3.0; i++) {
+    for (float i = 0.0; i < 5.0; i++) {
         // Chaque onde commence avec un retard (i * 0.15)
         float waveTime = (time_since_trigger - (i * 0.15)) * 1.5; 
         if (waveTime < 0.0 || waveTime > 1.0) continue;
         
         float radius = waveTime * 1.2; // L'onde s'étend
-        float thickness = 0.05;
+        float thickness = 0.025;
         float force = 0.03 * (1.0 - waveTime); // L'onde faiblit en s'éloignant
 
         // Masque de l'anneau pour l'onde i

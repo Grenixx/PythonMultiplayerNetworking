@@ -3,6 +3,7 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 import sys
 import pygame
 from game import Game
+from scripts.lobby_discovery import LobbyManager
 
 pygame.init()
 
@@ -127,9 +128,9 @@ class Menu:
 
 
 
-def start_game():
+def start_game(ip="127.0.0.1"):
     in_game = True
-    game = Game(FPS, [WIDTH,HEIGHT])
+    game = Game(FPS, [WIDTH,HEIGHT], ip=ip)
     game.run()
     while in_game:
         for ev in pygame.event.get():
@@ -171,12 +172,40 @@ def refps(fps_value):
     FPS=fps_value
 
 
-main_menu = Menu("Main Menu", [("START GAME", start_game),("OPTIONS", open_options),("QUIT GAME", quit_game),], font)
+def refresh_servers():
+    global server_menu
+    items = []
+    print("Recherche de serveurs...")
+    servers = LobbyManager.get_server_list()
+    
+    if not servers:
+        items.append(("No servers found", None))
+    else:
+        for s in servers:
+            # On capture la variable s['ip'] avec un argument par défaut dans la lambda
+            label = f"{s.get('name', 'Unknown')} ({s.get('ip')})"
+            action = lambda ip=s.get('ip'): start_game(ip)
+            items.append((label, action))
+            
+    items.append(("Refresh", refresh_servers))
+    items.append(("Back", lambda: set_active_menu(main_menu)))
+    
+    server_menu.items_data = items
+    server_menu.rebuild()
+
+def open_server_browser():
+    refresh_servers()
+    set_active_menu(server_menu)
+
+# Menu vide pour l'instant, sera rempli par refresh_servers
+server_menu = Menu("Server Browser", [("Loading...", None), ("Back", lambda: set_active_menu(main_menu))], font)
+
+main_menu = Menu("Main Menu", [("START LOCAL", lambda: start_game("127.0.0.1")),("FIND GAME", open_server_browser),("OPTIONS", open_options),("QUIT GAME", quit_game),], font)
 options_menu = Menu("Options", [("Audio",None),("Keyboards",lambda: set_active_menu(keyboard_menu)),("Graphics",lambda: set_active_menu(graphics_menu)),("FPS",lambda: set_active_menu(fps_menu)),("Back", lambda: set_active_menu(main_menu)),], font)
 keyboard_menu = Menu("Keyboard", [(f"Jump : {CONTROLS['JUMP']}",lambda: rebinding("JUMP")),(f"Change Arm : {CONTROLS['CHANGE ARM']}",lambda: rebinding("ATTACK")),(f"Dash : {CONTROLS['DASH']}",lambda: rebinding("DODGE")),(f"left : {CONTROLS['LEFT']}",lambda: rebinding("LEFT")),(f"Right : {CONTROLS['RIGHT']}",lambda: rebinding("RIGHT")),("Back", lambda: set_active_menu(options_menu))],font)
 graphics_menu = Menu("Graphics",[("3840-2160",lambda: resize(3840, 2160)),("2560-1440",lambda: resize(2560, 1440)),("1920-1080",lambda: resize(1920, 1080)),("1680-1050",lambda: resize(1680, 1050)),("1280-720",lambda: resize(1280,720)),("1024-768",lambda: resize(1024,768)),("800-600",lambda: resize(800,600)),("Back", lambda: set_active_menu(options_menu))],font)
 fps_menu = Menu("FPS",[("30 FPS",lambda: refps(30)),("45 FPS",lambda: refps(45)),("60 FPS",lambda: refps(60)),("120 FPS",lambda: refps(120)),("144 FPS",lambda: refps(144)),("165 FPS",lambda: refps(165)),("180 FPS",lambda: refps(180)),("240 FPS",lambda: refps(240)),("UNCAPPED FPS",lambda: refps(100000000)),("Back", lambda: set_active_menu(options_menu))],font)
-lst_menu = [main_menu,options_menu,keyboard_menu,graphics_menu]
+lst_menu = [main_menu,options_menu,keyboard_menu,graphics_menu,server_menu]
 
 
 def set_active_menu(menu):

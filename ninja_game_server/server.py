@@ -12,6 +12,20 @@ from enemy_manager import Blob, EnemyManager
 #   1 : Déconnexion
 #   0 : Mise à jour du joueur (position/action)
 #   3 : Suppression d’un ennemi
+#   9 : Ping
+
+import sys
+# Ajout du chemin vers les scripts du client
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../ninja_game/scripts')))
+try:
+    from lobby_discovery import LobbyManager
+except ImportError as e:
+    print("Erreur import LobbyManager:", e)
+    LobbyManager = None
+
+# ==============================
+# --- Player Manager ---
+# ==============================
 
 # ==============================
 # --- Player Manager ---
@@ -83,6 +97,11 @@ class GameServer:
         print(f"Serveur en ligne sur {ip}:{port}")
         if not local:
             self.init_upnp()
+        
+        # Démarrage du Lobby Discovery (même en local pour tester)
+        if LobbyManager:
+            self.lobby = LobbyManager(mode='server', server_port=self.port, server_name="Ninja Server")
+            self.lobby.start_heartbeat()
 
     def init_upnp(self):
         upnp = miniupnpc.UPnP()
@@ -120,6 +139,8 @@ class GameServer:
                     self.update_world()
         except KeyboardInterrupt:
             print("Arrêt du serveur...")
+            if hasattr(self, 'lobby') and self.lobby:
+                self.lobby.stop()
             self.sock.close()
 
 
