@@ -224,12 +224,7 @@ def host_game():
             subprocess.Popen([sys.executable, server_script], creationflags=subprocess.CREATE_NEW_CONSOLE)
         else:
             subprocess.Popen([sys.executable, server_script])
-            
-        # On attend un peu que le serveur démarre (optionnel, mais plus sûr)
-        import time
-        time.sleep(1)
-        
-        # On rejoint automatiquement en local
+
         start_game("127.0.0.1")
         
     except Exception as e:
@@ -276,8 +271,8 @@ def main():
 
         # Rendu du Shader
         # On peut simuler une caméra qui bouge lentement pour l'effet
-        cam_x = pygame.time.get_ticks() * 0.05
-        cam_y = pygame.time.get_ticks() * 0.05
+        cam_x = pygame.time.get_ticks() * 0.5
+        cam_y = pygame.time.get_ticks() * 0.5
         shader_surf = shader_bg.render(camera=(cam_x, cam_y))
         
         # On redimensionne le shader pour remplir l'écran (crée une nouvelle surface)
