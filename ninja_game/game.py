@@ -310,7 +310,7 @@ class Game:
 
             # --- VFX (Drawing on display_2 for additive glow visibility) ---
             for spark in self.sparks.copy():
-                kill = spark.update()
+                kill = spark.update(dt) 
                 spark.render(self.display_2, offset=render_scroll)
                 if kill:
                     self.sparks.remove(spark)

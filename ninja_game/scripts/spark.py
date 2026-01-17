@@ -8,11 +8,14 @@ class Spark:
         self.angle = angle
         self.speed = speed
         
-    def update(self):
-        self.pos[0] += math.cos(self.angle) * self.speed
-        self.pos[1] += math.sin(self.angle) * self.speed
+    def update(self, dt=1.0):
+        # On normalise sur 60 FPS (si dt est en secondes, dt*60 donne le facteur par rapport à une frame à 60FPS)
+        frame_factor = dt * 60 
         
-        self.speed = max(0, self.speed - 0.1)
+        self.pos[0] += math.cos(self.angle) * self.speed * frame_factor
+        self.pos[1] += math.sin(self.angle) * self.speed * frame_factor
+        
+        self.speed = max(0, self.speed - 0.1 * frame_factor)
         return not self.speed
     
     def render(self, surf, offset=(0, 0)):
