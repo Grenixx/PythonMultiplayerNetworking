@@ -225,6 +225,8 @@ class Player(PhysicsEntity):
             if dash_progress < 0.2:
                 if self.dash_dir == 'down':
                     self.velocity[1] *= dash_progress * 5
+                elif self.dash_dir == 'up':
+                    self.velocity[1] *= dash_progress * 5
                 else:
                     self.velocity[0] *= dash_progress * 5
         
