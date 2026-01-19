@@ -2,6 +2,7 @@ import os
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 import sys
 import subprocess
+import atexit
 import pygame
 import moderngl
 from game import Game
@@ -213,6 +214,20 @@ def quit_game():
     pygame.quit()
     sys.exit()
   
+
+def cleanup_server():
+    """Ferme proprement le serveur s'il est resté ouvert."""
+    if sys.platform == "win32":
+        try:
+            # On tue tous les processus qui ont 'NinjaGameServer' dans le titre de leur fenêtre
+            # /T tue aussi les processus enfants (le script python lui-même)
+            subprocess.run(['taskkill', '/F', '/FI', 'WINDOWTITLE eq NinjaGameServer*', '/T'], 
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except:
+            pass
+
+# Enregistre la fonction pour qu'elle s'exécute à la fermeture (même Alt+F4)
+atexit.register(cleanup_server)
 
 def resize(new_width, new_height):
     global WIDTH,HEIGHT, screen, BACKGROUND_DIM
