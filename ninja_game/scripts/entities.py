@@ -215,6 +215,9 @@ class Player(PhysicsEntity):
             if self.dash_dir == 'down':
                 self.velocity[1] = self.dash_speed
                 self.velocity[0] = 0
+            elif self.dash_dir == 'up':
+                self.velocity[1] = -self.dash_speed
+                self.velocity[0] = 0
             else:
                 self.velocity[0] = self.dash_speed if self.dashing > 0 else -self.dash_speed
             
@@ -228,6 +231,8 @@ class Player(PhysicsEntity):
         # TRANSITION FIN DE DASH (Momentum kill)
         if was_dashing and self.dashing == 0:
             if self.dash_dir == 'down':
+                self.velocity[1] = 0
+            elif self.dash_dir == 'up':
                 self.velocity[1] = 0
             else:
                 self.velocity[0] *= 0.2 # On casse l'inertie violemment
@@ -293,6 +298,13 @@ class Player(PhysicsEntity):
                 spark_angle = -math.pi / 2 # Tirer vers le HAUT
                 angle_width = 1.5
                 offset_y = -10
+                offset_x = 0
+            elif self.is_pressed == 'up':
+                # Dash vers le haut
+                self.dash_dir = 'up'
+                spark_angle = math.pi / 2 # Tirer vers le BAS
+                angle_width = 1.5
+                offset_y = 10
                 offset_x = 0
             else:
                 # Dash horizontal
