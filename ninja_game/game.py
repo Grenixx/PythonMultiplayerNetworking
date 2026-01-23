@@ -32,7 +32,7 @@ def resource_path(relative_path):
     import sys
     import os
     try:
-        #PyInstaller stocke les fichiers dans _MEIPASS on a besoind d un fonc pour y acceder heheeee
+        #PyInstaller stocke les fichiers dans _MEIPASS on a besoind d un fonc pour y acceder heheee
         base_path = sys._MEIPASS
     except AttributeError:
         base_path = os.path.abspath(".")
