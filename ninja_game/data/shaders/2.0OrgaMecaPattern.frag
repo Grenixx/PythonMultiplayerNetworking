@@ -78,9 +78,7 @@
                 float b = mix(dotBl, dotBr, gridUv.x);
                 float t = mix(dotTl, dotTr, gridUv.x);
                 float perlin = mix(b, t, gridUv.y);
-
-                // Utilisation de la couleur dynamique en fonction du Perlin noise
-                //vec3 baseColor = vec3(perlin * 30.0); // Ajustez l'échelle si nécessaire
+ 
                 color = vec3((sin(perlin * 20.0)));
 
                 color = step(0.2, color);
