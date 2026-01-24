@@ -1,4 +1,5 @@
 import random
+import pygame
 from math import *
 
 from TilemapServer import PHYSICS_TILES
@@ -41,7 +42,7 @@ class EnemyManager:
             enemy.physics_process(0.0)
 
 class Enemy:
-    def __init__(self, eid: int, pos: list, enemy_manager: EnemyManager, speed: float):
+    def __init__(self, eid: int, pos: list, enemy_manager: EnemyManager, speed: float, size: tuple = (18, 25)):
         self.eid = eid
         self.properties = {
             'x': pos[0],
@@ -54,8 +55,11 @@ class Enemy:
         }
         self.enemy_manager = enemy_manager
         self.speed = speed
+        self.size = size
         self.spawn_position = pos
         print(f"ennemi créé en {pos} !")
+        self.unstuck()
+
     def can_see_player(self, player: list) -> None:
         """Returns a boolean indicating whether the enemy can see the player"""
         return not raycast_collide([self.properties['x'], self.properties['y']],
@@ -68,6 +72,38 @@ class Enemy:
     def create_enemy(self, pos: list, enemy_type: str) -> None:
         self.enemy_manager.create_enemy(pos, enemy_type)
 
+    def unstuck(self): 
+
+        """deplace patrol si spawn dans mur"""
+        if not self.check_collision((self.properties['x'], self.properties['y'])):
+            return
+
+        for r in range(2, 64, 4):
+            for angle_deg in range(0, 360, 45):
+                rad = radians(angle_deg)
+                nx = self.properties['x'] + cos(rad) * r
+                ny = self.properties['y'] + sin(rad) * r
+                if not self.check_collision((nx, ny)):
+                    self.properties['x'] = nx
+                    self.properties['y'] = ny
+                    return
+
+    def check_collision(self, pos: list) -> bool:
+        """Vérifie si la hitbox de l'ennemi à la position 'pos' touche un mur."""
+        x, y = pos
+        w, h = self.size
+        epsilon = 0.1 # Petite marge pour éviter de coller aux murs adjacents
+        points = [
+            (x + epsilon +3, y + epsilon),           # Haut-Gauche
+            (x + w - epsilon+3, y + epsilon),       # Haut-Droite
+            (x + epsilon, y + h - epsilon),       # Bas-Gauche
+            (x + w - epsilon, y + h - epsilon)    # Bas-Droite
+        ]
+        for p in points:
+            if self.enemy_manager.tilemap.solid_check(p):
+                return True
+        return False
+
     def does_collide(self,new_pos: list) -> list:
         """
         Returns whether the mob will have a collision on the next frame as an array of booleans,
@@ -76,9 +112,9 @@ class Enemy:
         [False, True]: collision on the y-axis
         """
         res = [False, False]
-        if self.enemy_manager.tilemap.solid_check((new_pos[0], self.properties['y'])):
+        if self.check_collision((new_pos[0], self.properties['y'])):
             res[0] = True
-        if self.enemy_manager.tilemap.solid_check((self.properties['x'], new_pos[1])):
+        if self.check_collision((self.properties['x'], new_pos[1])):
             res[1] = True
         return res
 
@@ -144,12 +180,12 @@ class Blob(Enemy):
             new_x = pos[0] + step[0]
             new_y = pos[1] + step[1] + velocity[1]
 
-            if not tilemap.solid_check((new_x, pos[1])):
+            if not self.check_collision((new_x, pos[1])):
                 velocity[0] = step[0]
             else:
                 velocity[0] = 0
 
-            if not tilemap.solid_check((pos[0], new_y)):
+            if not self.check_collision((pos[0], new_y)):
                 velocity[1] += step[1]
             else:
                 velocity[1] = 0
