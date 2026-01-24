@@ -1,3 +1,7 @@
+#version 130
+// Alternatively, use #version 330 core for more modern features
+
+
 precision mediump float;
 
 uniform float u_time;

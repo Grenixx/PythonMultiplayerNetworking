@@ -1,3 +1,6 @@
+#version 130
+
+
 precision mediump float;
 
 uniform float u_time;

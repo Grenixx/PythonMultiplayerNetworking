@@ -370,7 +370,7 @@ class PurpleCircle:
     def __init__(self, game):
         self.game = game
         self.radius = 8  # rayon du cercle pour les collisions
-        self.size = (18, 18) # (Largeur, Hauteur)
+        self.size = (18, 25) # (Largeur, Hauteur)
         self.collision_offset = (5, 0) # (X, Y)
 
         base_anim = self.game.assets.get(f'patrol/idle', self.game.assets['player/idle'])
